@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Concept Explorer — Problem-solving Ontology</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --line:#e2e5ea; --line2:#eef0f3;
+    --text:#1c1f24; --muted:#71787f; --accent:#2f6df6; --accent-soft:#e8f0ff;
+    --danger:#d64545; --ok:#2e9e5b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",system-ui,sans-serif;
+    background:var(--bg); color:var(--text); font-size:13px; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  button{font-family:inherit;font-size:12px;cursor:pointer}
+  input,textarea,select{font-family:inherit;font-size:13px;color:inherit}
+
+  /* ---------- top bar ---------- */
+  #top{height:52px;display:flex;align-items:center;gap:9px;padding:0 14px;
+       background:var(--panel);border-bottom:1px solid var(--line);flex:0 0 52px}
+  #top h1{font-size:14px;margin:0;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+  #top h1 span{font-weight:400;color:var(--muted);font-size:11px;margin-left:6px}
+  .meta-in{border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:#fff;outline:none;min-width:0}
+  .meta-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  #topSpacer{flex:1}
+  .btn{border:1px solid var(--line);background:#fff;color:var(--text);
+       padding:7px 11px;border-radius:6px;white-space:nowrap}
+  .btn:hover{background:#f2f4f7}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+  .btn.ghost:hover{background:#f2f4f7;color:var(--text)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.armed,.icb.armed{color:var(--danger)!important;font-weight:700;background:#fdeaea!important}
+  #saveChip{font-size:11px;color:var(--muted);white-space:nowrap;padding:0 2px}
+  #saveChip.bad{color:var(--danger);font-weight:700}
+  .sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+
+  /* ---------- layout ---------- */
+  #main{display:flex;flex:1;min-height:0}
+  #left{flex:1;min-width:320px;display:flex;flex-direction:column;background:var(--panel)}
+  #grip{width:6px;cursor:col-resize;background:var(--line);flex:0 0 6px}
+  #grip:hover{background:var(--accent)}
+  #right{width:440px;min-width:300px;max-width:760px;display:flex;flex-direction:column;
+         background:var(--panel);border-left:1px solid var(--line)}
+
+  /* ---------- canvas ---------- */
+  #tools{display:flex;align-items:center;gap:6px;padding:8px 12px;
+         border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tool{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 10px}
+  .tool.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .swatch{width:19px;height:19px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+  .swatch.on{border-color:var(--text)}
+  #sizeRange{width:74px;vertical-align:middle}
+  #inkGroup{display:inline-flex;align-items:center;gap:6px;transition:opacity .15s}
+  #inkGroup.idle{opacity:.4}
+  .hint{font-size:11px;color:var(--muted)}
+  #canvasWrap{flex:1;position:relative;overflow:hidden;background:#fff}
+  #board{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  #canvasWrap.dragover::after{
+    content:"Drop here";position:absolute;inset:10px;border:2px dashed var(--accent);
+    border-radius:10px;display:flex;align-items:center;justify-content:center;
+    color:var(--accent);font-weight:600;background:rgba(47,109,246,.05);pointer-events:none}
+  #nodeEditor{position:absolute;display:none;z-index:5;background:#fff;border:1px solid var(--accent);
+    border-radius:6px;padding:4px 6px;box-shadow:0 4px 16px rgba(0,0,0,.14);outline:none;min-width:110px}
+  #canvasFoot{display:flex;align-items:center;gap:10px;padding:4px 12px;min-height:34px;
+              border-top:1px solid var(--line2);font-size:11px;color:var(--muted);overflow:hidden}
+  #boardHints{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #nodeTypeWrap{display:none;align-items:center;gap:6px;min-width:0}
+  #nodeTypeWrap.on{display:inline-flex}
+  #nodeTypeWrap.on + #selInfo{margin-left:auto}
+  #nodeTypeName{color:var(--text);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #nodeType{border:1px solid var(--line);border-radius:5px;padding:2px 4px;background:#fff;
+            font-size:11px;max-width:210px}
+
+  /* ---------- right panel ---------- */
+  #rHead{padding:10px 12px 0}
+  #search{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 10px;outline:none}
+  #search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  #tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--line)}
+  .tab{border:none;background:transparent;padding:8px 10px;border-bottom:2px solid transparent;
+       color:var(--muted);font-weight:600;border-radius:6px 6px 0 0;white-space:nowrap}
+  .tab:hover{background:#f2f4f7;color:var(--text)}
+  .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+  .pane{flex:1;overflow:auto;padding:10px 12px 40px;display:none}
+  .pane.on{display:block}
+  .paneNote{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 10px;
+            background:#f8f9fb;border:1px solid var(--line2);border-radius:6px;padding:7px 9px}
+
+  .addRow{display:flex;gap:6px;margin-bottom:10px}
+  .addRow input{flex:1;border:1px solid var(--line);border-radius:6px;padding:7px 9px;outline:none;min-width:0}
+  .addRow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .addRow select{border:1px solid var(--line);border-radius:6px;padding:7px 6px;background:#fff;
+                 max-width:150px;min-width:0}
+
+  .clist{list-style:none;margin:0;padding:0}
+  .crow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid transparent;
+        border-radius:6px;cursor:grab}
+  .crow:hover{background:#f6f7f9;border-color:var(--line2)}
+  .crow.used{background:#f0fbf4}
+  .crow .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
+  .crow .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .lbl:focus{background:#fff;box-shadow:0 0 0 2px var(--accent-soft);border-radius:4px;white-space:normal}
+  .crow .cat{font-size:10px;color:var(--muted);flex:0 0 auto;max-width:150px;
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .acts{display:none;gap:2px;flex:0 0 auto}
+  .crow:hover .acts{display:flex}
+  .icb{border:none;background:transparent;color:var(--muted);padding:3px 5px;border-radius:4px;line-height:1}
+  .icb:hover{background:#e6e9ee;color:var(--text)}
+  .icb.del:hover{background:#fdeaea;color:var(--danger)}
+  .tag-mine{font-size:9px;background:var(--accent-soft);color:var(--accent);border-radius:3px;padding:1px 4px;flex:0 0 auto}
+  .miniSel{border:1px solid var(--accent);border-radius:5px;padding:3px 4px;font-size:11px;background:#fff;max-width:190px}
+  .inlineAdd{display:flex;gap:5px;padding:4px 6px 6px}
+  .inlineAdd input{flex:1;border:1px solid var(--accent);border-radius:5px;padding:5px 7px;outline:none;min-width:0}
+
+  .typeBlock{border:1px solid var(--line2);border-radius:8px;margin-bottom:10px;overflow:hidden}
+  .typeHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8f9fb;cursor:pointer}
+  .typeHead .name{flex:1;font-weight:700;font-size:12px}
+  .typeHead .cnt{font-size:11px;color:var(--muted)}
+  .typeBody{padding:2px 6px 8px}
+  .typeBlock.closed .typeBody{display:none}
+  .subHead{display:flex;align-items:center;gap:6px;padding:7px 6px 2px;
+           font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .subHead .sname{flex:1}
+  .arrow{font-size:10px;color:var(--muted);width:10px}
+  .typeDot{width:12px;height:12px;border-radius:50%;border:none;cursor:pointer;padding:0;flex:0 0 12px;
+           box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+  .typeHead .name[contenteditable="true"]:focus{background:#fff;box-shadow:0 0 0 2px var(--accent-soft);
+           border-radius:4px;outline:none}
+  .colorPop{display:flex;flex-wrap:wrap;gap:5px;padding:8px;border:1px solid var(--accent);
+            border-radius:8px;background:#fff;margin:0 6px 6px}
+  .colorPop button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+  .colorPop button.on{border-color:var(--text)}
+
+
+  .cRow{display:flex;align-items:center;gap:6px;padding:1px 0}
+  .cRow .bullet{color:var(--muted);flex:0 0 auto;font-size:10px}
+  .cRow input.ci{flex:1;border:1px solid transparent;border-radius:5px;padding:5px 7px;outline:none;
+                 background:transparent;min-width:0}
+  .cRow input.ci:hover{background:#f6f7f9}
+  .cRow input.ci:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .cRow .acts{display:none}
+  .cRow:hover .acts{display:flex;gap:2px}
+  .depthGuide{border-left:1px solid var(--line);height:24px;flex:0 0 auto}
+
+  #ontWrap{overflow:auto;border:1px solid var(--line);border-radius:8px}
+  table.ont{border-collapse:collapse;width:100%;min-width:1020px;font-size:12px}
+  table.ont th,table.ont td{border:1px solid var(--line);padding:0;vertical-align:top}
+  table.ont th{background:#f8f9fb;padding:7px 8px;text-align:left;font-size:11px;font-weight:700;
+               position:sticky;top:0;z-index:1}
+  table.ont td textarea{width:100%;min-height:46px;border:none;padding:6px 8px;resize:vertical;
+                        outline:none;background:transparent;font-size:12px;line-height:1.45}
+  table.ont td textarea:focus{background:#fff;box-shadow:inset 0 0 0 2px var(--accent-soft)}
+  table.ont td.rowdel{width:26px;text-align:center;background:#fafbfc}
+
+  /* ---------- versions ---------- */
+  #verPanel{position:fixed;top:56px;right:12px;width:400px;max-height:74vh;overflow:auto;z-index:40;
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    box-shadow:0 12px 34px rgba(0,0,0,.16);display:none;padding:12px}
+  #verPanel.on{display:block}
+  #verPanel h3{margin:0 0 4px;font-size:13px}
+  .verRow{border:1px solid var(--line2);border-radius:8px;padding:9px 10px;margin-top:8px}
+  .verRow .vtop{display:flex;align-items:center;gap:8px}
+  .verRow .vlabel{flex:1;font-weight:700;font-size:12.5px;outline:none;min-width:0}
+  .verRow .vlabel:focus{background:#f6f7f9;border-radius:4px}
+  .verRow .vmeta{font-size:11px;color:var(--muted);margin-top:3px;white-space:pre-line}
+  .verRow .vacts{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+  .verRow.auto{background:#fbfbfc}
+  .verRow.auto .vlabel{font-weight:500;color:var(--muted)}
+  #storeBar{height:5px;background:var(--line2);border-radius:3px;overflow:hidden;margin-top:6px}
+  #storeFill{height:100%;background:var(--ok);width:0}
+  #storeFill.warn{background:var(--danger)}
+
+  /* ---------- notes ---------- */
+  #noteGrip{height:6px;cursor:row-resize;background:var(--line);flex:0 0 6px}
+  #noteGrip:hover{background:var(--accent)}
+  #notes{display:flex;flex-direction:column;background:var(--panel);
+         border-top:1px solid var(--line);flex:0 0 auto}
+  #notesHead{display:flex;align-items:center;gap:10px;padding:6px 14px}
+  #notesHead b{font-size:12px}
+  #noteArea{flex:1;width:100%;border:none;outline:none;resize:none;padding:2px 14px 12px;
+            font-family:inherit;font-size:13px;line-height:1.6;background:transparent}
+  #notes.closed #noteArea{display:none}
+  #noteCount{margin-left:auto;font-size:11px;color:var(--muted)}
+
+  .empty{color:var(--muted);font-size:12px;padding:14px;text-align:center;line-height:1.6}
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:#1c1f24;color:#fff;padding:9px 16px;border-radius:20px;font-size:12px;
+    opacity:0;pointer-events:none;transition:.22s;z-index:60}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <h1>Concept Explorer <span>problem-solving ontology</span></h1>
+  <input id="mName"  class="meta-in" style="width:104px" placeholder="Your name">
+  <input id="mTitle" class="meta-in" style="width:200px" placeholder="Core problem">
+  <div id="topSpacer"></div>
+  <span id="saveChip"></span>
+  <span class="sep"></span>
+  <button class="btn primary" id="bSaveVer">Save version</button>
+  <button class="btn" id="bVersions">Versions (0)</button>
+  <span class="sep"></span>
+  <button class="btn" id="bPng">PNG</button>
+  <button class="btn" id="bWord">Word</button>
+  <button class="btn" id="bExcel">Excel</button>
+  <span class="sep"></span>
+  <button class="btn ghost" id="bSave">Backup</button>
+  <button class="btn ghost" id="bLoad">Restore file</button>
+  <button class="btn ghost" id="bReset">Reset</button>
+  <input type="file" id="fileIn" accept=".json" hidden>
+</div>
+
+<div id="main">
+  <div id="left">
+    <div id="tools">
+      <button class="tool on" data-tool="select">↖ Select</button>
+      <button class="tool" data-tool="pen">✎ Draw</button>
+      <button class="tool" data-tool="link">↔ Link</button>
+      <button class="tool" data-tool="text">T Text</button>
+      <button class="tool" data-tool="erase">⌫ Erase</button>
+      <span class="sep"></span>
+      <span id="inkGroup" title="Colour and thickness apply to Draw and Text">
+        <span id="colors"></span>
+        <input type="range" id="sizeRange" min="1" max="14" value="2" title="Stroke width">
+      </span>
+      <span class="sep"></span>
+      <button class="btn ghost" id="bUndo" title="Ctrl+Z">↶</button>
+      <button class="btn ghost" id="bRedo" title="Ctrl+Shift+Z">↷</button>
+      <button class="btn ghost" id="bAddNode" title="Create a new concept and place it on the board">+ Concept</button>
+      <button class="btn ghost" id="bClear">Clear board</button>
+    </div>
+    <div id="canvasWrap">
+      <canvas id="board"></canvas>
+      <input id="nodeEditor">
+    </div>
+    <div id="canvasFoot">
+      <span id="boardHints">
+        <b>Drag</b> a concept from the right, or <b>double-click</b> it, to place it on the board
+        &nbsp;·&nbsp; a <b>node is a concept</b> (renaming it renames the concept)
+        &nbsp;·&nbsp; <b>Text</b> is just a note on the sketch
+      </span>
+      <span id="nodeTypeWrap" title="A node takes the colour of its concept type">
+        <b id="nodeTypeName"></b>
+        <span>type</span>
+        <select id="nodeType"></select>
+      </span>
+      <span id="selInfo" style="margin-left:auto"></span>
+    </div>
+  </div>
+
+  <div id="grip"></div>
+
+  <div id="right">
+    <div id="rHead"><input id="search" placeholder="Search concepts…"></div>
+    <div id="tabs">
+      <button class="tab on" data-pane="raw">Raw</button>
+      <button class="tab" data-pane="cat">Categories</button>
+      <button class="tab" data-pane="causal">Causal</button>
+      <button class="tab" data-pane="ont">Table</button>
+    </div>
+
+    <div class="pane on" id="pane-raw">
+      <p class="paneNote">Every concept you are working with. <b>Add</b> one below; hover a row for
+        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. <b>Double-click or drag</b> a concept to put it on the
+        board — green rows are already there. A node on the board <b>is</b> its concept: rename one and the
+        other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
+      <div class="addRow">
+        <input id="newRaw" placeholder="New concept name">
+        <select id="newRawCat"></select>
+        <button class="btn primary" id="bAddRaw">Add</button>
+      </div>
+      <ul class="clist" id="rawList"></ul>
+    </div>
+
+    <div class="pane" id="pane-cat">
+      <p class="paneNote">Concept <b>types</b> come from the course framework, but you can edit them: click the
+        <b>coloured dot</b> to change a colour, click the <b>name</b> to rename, <b>⊞</b> makes a subtype,
+        <b>+</b> adds a concept, <b>✕</b> removes a type. A node on the board takes the colour of its type.</p>
+      <div class="addRow">
+        <input id="newTypeName" placeholder="New concept type">
+        <button class="btn" id="bAddType">Add type</button>
+      </div>
+      <div id="catList"></div>
+    </div>
+
+    <div class="pane" id="pane-causal">
+      <p class="paneNote"><b>Tab</b> indent · <b>Shift+Tab</b> outdent · <b>Enter</b> new line ·
+        <b>Backspace</b> on an empty line deletes it. If Tab is captured by the host page, use the
+        <b>⇥ ⇤</b> buttons on the row. A line is the cause; the lines indented under it are what follows.</p>
+      <div class="addRow">
+        <select id="seedCat" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:7px 6px;background:#fff"></select>
+        <button class="btn" id="bCausalSeed">Pull in as lines</button>
+        <button class="btn ghost" id="bCausalClear">Clear</button>
+      </div>
+      <div id="causalList"></div>
+    </div>
+
+    <div class="pane" id="pane-ont">
+      <p class="paneNote">One column per concept type. Type freely in any cell, or <b>drag a concept</b> into it.
+        This table is the body of the Word / Excel export. Scroll it sideways, or drag the panel divider,
+        if the cells feel cramped.</p>
+      <div class="addRow"><button class="btn primary" id="bAddOntRow">+ Add row</button></div>
+      <div id="ontWrap"></div>
+    </div>
+  </div>
+</div>
+
+<div id="noteGrip"></div>
+<div id="notes">
+  <div id="notesHead">
+    <b>Notes</b>
+    <span class="hint">Scratch space. Saved with your work and included in every export and version.</span>
+    <span id="noteCount"></span>
+    <button class="btn ghost" id="bNoteToggle" title="Collapse / expand">▾</button>
+  </div>
+  <textarea id="noteArea" placeholder="e.g. contrarian belief, questions for the instructor, what to test next…"></textarea>
+</div>
+
+<div id="verPanel">
+  <h3 style="display:flex;align-items:center">Versions
+    <button class="btn ghost" id="bVerClose" style="margin-left:auto" title="Close">✕</button></h3>
+  <div class="hint" id="verHint"></div>
+  <div id="storeBar"><div id="storeFill"></div></div>
+  <div id="verList"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =========================================================
+   0. Framework (Section IV) — the same six types for everyone
+   ========================================================= */
+const DEFAULT_TYPES = [
+  {id:"assump",  name:"Assumptions",               color:"#4c6ef5"},
+  {id:"process", name:"Problem-solving processes", color:"#12b886"},
+  {id:"repr",    name:"Representation",            color:"#f59f00"},
+  {id:"aggr",    name:"Aggregation",               color:"#e64980"},
+  {id:"outcome", name:"Outcomes",                  color:"#7950f2"},
+  {id:"context", name:"Context",                   color:"#495057"}
+];
+/* Types live in state, so a student (or the instructor preparing the file) can
+   rename them, recolour them, add their own, or drop the ones they never use.
+   A node's colour is its type's colour — one source of truth, no second palette. */
+const TYPES_OF = () => S.types;
+const TYPE_COLORS = ["#4c6ef5","#12b886","#f59f00","#e64980","#7950f2","#495057",
+                     "#1098ad","#f76707","#37b24d","#ae3ec9","#d6336c","#0b7285"];
+const BASE_SUBS = [
+  ["assump","task environment assumptions"],
+  ["assump","agent assumptions"],
+  ["process","search strategies"],
+  ["process","interaction strategies"],
+  ["process","aggregation strategies"],
+  ["repr","data"],
+  ["outcome","initial states"],
+  ["outcome","intermediate states"],
+  ["outcome","goal states"],
+  ["context","example settings"],
+  ["context","theories"],
+  ["context","people"],
+  ["context","places"],
+  ["context","technologies"]
+];
+/* Raw ontology ships empty. When the instructor's list arrives, fill this with
+   ["<typeId>", "<subtype name or empty>", "<concept>"] triples. */
+const SAMPLE = [];
+
+const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
+const STORE_KEY = "concept-explorer-v2";
+
+let S = null, uid = 1;
+const nid = p => (p||"i") + "_" + Date.now().toString(36) + "_" + (uid++);
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
+
+function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, name:n, mine:false})); }
+function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
+function blankState(){
+  return {
+    schema:2,
+    meta:{name:"", title:""},
+    types: DEFAULT_TYPES.map(t=>({...t})),
+    subs: baseSubs(),
+    concepts: SAMPLE.map(([type,sub,label])=>({
+      id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null, mine:false })),
+    causal:[{id:nid("r"), depth:0, text:""}],
+    ont:[blankOntRow(), blankOntRow(), blankOntRow()],
+    scene:{strokes:[], nodes:[], texts:[], links:[]},
+    notes:"", noteH:150, noteOpen:true,
+    versions:[], closedTypes:{},
+    tool:"select", color:PALETTE[0], size:2
+  };
+}
+const typeOf = id => (S.types||[]).find(t=>t.id===id) || null;
+const subOf  = id => (S.subs||[]).find(x=>x.id===id) || null;
+function catLabel(c){
+  const sb=c.sub?subOf(c.sub):null; if(sb) return sb.name;
+  const tp=typeOf(c.type);          if(tp) return tp.name;
+  return "(uncategorized)";
+}
+function catColor(c){ const t=typeOf(c.type); return t?t.color:"#adb5bd"; }
+function catValue(c){ return c.sub || c.type || ""; }
+function applyCatValue(c,v){
+  if(!v){ c.type=null; c.sub=null; return; }
+  if(v.indexOf("::")>0){ c.sub=v; c.type=v.split("::")[0]; }
+  else { c.type=v; c.sub=null; }
+}
+function fillCatSelect(sel, current, opts){
+  opts=opts||{}; sel.innerHTML="";
+  if(opts.blank){ const o=document.createElement("option"); o.value=""; o.textContent="(uncategorized)"; sel.appendChild(o); }
+  S.types.forEach(t=>{
+    const g=document.createElement("optgroup"); g.label=t.name;
+    const o0=document.createElement("option"); o0.value=t.id; o0.textContent=t.name+" — general"; g.appendChild(o0);
+    (S.subs||[]).filter(s=>s.type===t.id).forEach(s=>{
+      const o=document.createElement("option"); o.value=s.id; o.textContent=s.name; g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+  if(current!=null) sel.value=current;
+}
+
+/* =========================================================
+   1. Persistence — the student's work lives in this browser
+   ========================================================= */
+let saveTimer=null, lastSave=0, dirty=false, storageOK=true, suspend=false;
+
+function writeNow(){
+  clearTimeout(saveTimer); saveTimer=null;
+  if(!dirty || suspend) return;
+  try{
+    S.savedAt=Date.now();
+    localStorage.setItem(STORE_KEY, JSON.stringify(S));
+    dirty=false; lastSave=S.savedAt; storageOK=true;
+  }catch(e){
+    storageOK=false;
+    toast("Could not save to this browser. Use Backup to keep a copy of your work.");
+  }
+  paintSaveChip();
+}
+function persist(){
+  if(suspend) return;
+  dirty=true;
+  if(Date.now()-lastSave > 2000){ writeNow(); return; }  /* never let the debounce starve a write */
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(writeNow,400);
+}
+window.addEventListener("pagehide", writeNow);
+window.addEventListener("beforeunload", writeNow);
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) writeNow(); });
+
+function paintSaveChip(){
+  if(typeof IN_FRAME!=="undefined" && IN_FRAME) return;
+  const el=document.getElementById("saveChip");
+  if(!storageOK){
+    el.className="bad"; el.textContent="⚠ not saved in browser";
+    el.title="This browser refused to store your work (private window, or storage full). Use Backup.";
+    return;
+  }
+  el.className="";
+  const at = lastSave || S.savedAt;
+  if(!at){ el.textContent="nothing saved yet"; return; }
+  const d=new Date(at), p=n=>String(n).padStart(2,"0"), now=new Date();
+  const sameDay = d.toDateString()===now.toDateString();
+  el.textContent = "saved " + (sameDay ? "" : (d.getMonth()+1)+"/"+d.getDate()+" ")
+                 + p(d.getHours())+":"+p(d.getMinutes());
+  el.title="Your work is stored in this browser on this computer. Use Backup for a file copy.";
+}
+setInterval(paintSaveChip, 30000);
+
+/* migrate the earlier six-flat-category shape so nobody loses concepts */
+const OLD_MAP = {
+  rep:"repr::data", sea:"process::search-strategies", int:"process::interaction-strategies",
+  agg:"process::aggregation-strategies", init:"outcome::initial-states", goal:"outcome::goal-states"
+};
+const OLD_ONT_COL = { rep:"repr", sea:"process", int:"process", agg:"aggr", init:"outcome", goal:"outcome" };
+function migrate(d){
+  if(d.schema===2) return d;
+  const out=blankState();
+  out.meta     = d.meta || out.meta;
+  out.notes    = d.notes || "";
+  out.noteH    = d.noteH || 150;
+  out.noteOpen = d.noteOpen!==false;
+  out.causal   = (d.causal && d.causal.length) ? d.causal : out.causal;
+  out.scene    = d.scene || out.scene;
+  out.concepts = (d.concepts||[]).map(c=>{
+    const o={id:c.id||nid("c"), label:c.label, type:null, sub:null, mine:!!c.mine};
+    const v=OLD_MAP[c.cat]; if(v) applyCatValue(o,v);
+    return o;
+  });
+  if(d.ont && d.ont.length){
+    out.ont=d.ont.map(r=>{
+      const n=blankOntRow();
+      Object.keys(OLD_ONT_COL).forEach(k=>{
+        if(r[k]) n[OLD_ONT_COL[k]] = (n[OLD_ONT_COL[k]] ? n[OLD_ONT_COL[k]]+"\n" : "") + r[k];
+      });
+      return n;
+    });
+  }
+  return out;
+}
+/* Older boards stored a copy of the label on the node. Bind each of those to a
+   real concept — matching by name, and creating the concept when it is missing —
+   so everything on the board is present in the concept list. */
+function bindNodes(d){
+  if(d.types===undefined && d.__isSnap) d.types=DEFAULT_TYPES.map(t=>({...t}));
+  const byName={};
+  (d.concepts||[]).forEach(c=>{ byName[String(c.label||"").trim().toLowerCase()]=c; });
+  (d.scene && d.scene.nodes ? d.scene.nodes : []).forEach(n=>{
+    if(n.cid && (d.concepts||[]).some(c=>c.id===n.cid)) return;
+    const key=String(n.label||"").trim().toLowerCase();
+    let c=byName[key];
+    if(!c){
+      c={id:nid("c"), label:n.label||"Concept", type:n.type||null, sub:null, mine:true};
+      d.concepts.push(c); byName[key]=c;
+    }
+    n.cid=c.id; delete n.label; delete n.type;
+  });
+  return d;
+}
+function hydrate(d){
+  d=migrate(d);
+  d.types = (d.types && d.types.length) ? d.types : DEFAULT_TYPES.map(t=>({...t}));
+  d.subs = (d.subs && d.subs.length) ? d.subs : baseSubs();
+  d.versions = d.versions || [];
+  d.closedTypes = d.closedTypes || {};
+  d.scene = d.scene || {strokes:[],nodes:[],texts:[],links:[]};
+  d.ont = (d.ont && d.ont.length) ? d.ont : [blankOntRow()];
+  d.causal = (d.causal && d.causal.length) ? d.causal : [{id:nid("r"),depth:0,text:""}];
+  d.concepts = d.concepts || [];
+  bindNodes(d);
+  (d.versions||[]).forEach(v=>{
+    if(!v.snap) return;
+    if(!v.snap.types || !v.snap.types.length) v.snap.types=DEFAULT_TYPES.map(t=>({...t}));
+    bindNodes(v.snap);
+  });
+  return d;
+}
+function restore(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    if(!d || !d.concepts) return false;
+    S=hydrate(d); return true;
+  }catch(e){ return false; }
+}
+
+function twoStep(btn,label,fn){
+  if(btn._armed){
+    clearTimeout(btn._t); btn._armed=false;
+    btn.textContent=btn._orig; btn.classList.remove("armed"); fn(); return;
+  }
+  btn._orig=btn.textContent; btn._armed=true;
+  btn.textContent=label||"Sure?"; btn.classList.add("armed");
+  btn._t=setTimeout(()=>{ btn._armed=false; btn.textContent=btn._orig; btn.classList.remove("armed"); },3000);
+}
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("on");
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove("on"),2400);
+}
+
+/* =========================================================
+   2. Canvas
+   ========================================================= */
+const wrap=document.getElementById("canvasWrap");
+const cv=document.getElementById("board");
+const ctx=cv.getContext("2d");
+const editor=document.getElementById("nodeEditor");
+let DPR=1, CW=0, CH=0, selected=null, linkFrom=null, drag=null, drawing=null;
+const history=[], future=[];
+
+function resizeCanvas(){
+  DPR=window.devicePixelRatio||1;
+  const r=wrap.getBoundingClientRect();
+  CW=r.width; CH=r.height;
+  cv.width=Math.round(CW*DPR); cv.height=Math.round(CH*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  render();
+}
+function snapshot(){
+  history.push(JSON.stringify(S.scene));
+  if(history.length>60) history.shift();
+  future.length=0; updUndo();
+}
+function undo(){ if(!history.length) return;
+  future.push(JSON.stringify(S.scene)); S.scene=JSON.parse(history.pop());
+  selected=null; render(); renderRight(); persist(); updUndo(); }
+function redo(){ if(!future.length) return;
+  history.push(JSON.stringify(S.scene)); S.scene=JSON.parse(future.pop());
+  selected=null; render(); renderRight(); persist(); updUndo(); }
+function updUndo(){
+  document.getElementById("bUndo").disabled=!history.length;
+  document.getElementById("bRedo").disabled=!future.length;
+}
+/* A node on the board IS a concept from the list — it stores the concept's id and
+   reads the label and type from it, so the two can never drift apart. */
+const conceptOf   = n => S.concepts.find(c=>c.id===n.cid) || null;
+const nodeLabel   = n => { const c=conceptOf(n); return c ? c.label : (n.label||"Concept"); };
+const nodeTypeId  = n => { const c=conceptOf(n); return c ? c.type : (n.type||null); };
+/* A node grows with its label, wrapping onto a few lines rather than truncating.
+   Laying text out costs a handful of measureText calls, so the result is cached
+   per label — render() runs on every pointer move while drawing. */
+const NODE_FONT="600 13px -apple-system,BlinkMacSystemFont,system-ui,sans-serif";
+const NODE_MINW=74, NODE_MAXW=260, NODE_PADX=30, NODE_LINEH=17, NODE_MAXLINES=4;
+const layoutCache=new Map();
+function layoutLabel(label){
+  const cached=layoutCache.get(label);
+  if(cached) return cached;
+  ctx.font=NODE_FONT;
+  const maxText=NODE_MAXW-NODE_PADX;
+  const words=String(label||"Concept").split(/\s+/).filter(Boolean);
+  if(!words.length) words.push("Concept");
+  const lines=[]; let cur="";
+  const pushWord=w=>{
+    if(!cur){ cur=w; return; }
+    if(ctx.measureText(cur+" "+w).width<=maxText) cur=cur+" "+w;
+    else { lines.push(cur); cur=w; }
+  };
+  words.forEach(w=>{
+    if(ctx.measureText(w).width<=maxText){ pushWord(w); return; }
+    if(cur){ lines.push(cur); cur=""; }      /* a single word wider than the box */
+    let chunk="";
+    for(const ch of w){
+      if(ctx.measureText(chunk+ch).width>maxText && chunk){ lines.push(chunk); chunk=ch; }
+      else chunk+=ch;
+    }
+    cur=chunk;
+  });
+  if(cur) lines.push(cur);
+  let out=lines;
+  if(out.length>NODE_MAXLINES){
+    out=out.slice(0,NODE_MAXLINES);
+    let last=out[NODE_MAXLINES-1];
+    while(last.length>1 && ctx.measureText(last+"…").width>maxText) last=last.slice(0,-1);
+    out[NODE_MAXLINES-1]=last+"…";
+  }
+  let w=0; out.forEach(l=>{ w=Math.max(w, ctx.measureText(l).width); });
+  const res={ lines:out,
+              w:Math.min(NODE_MAXW, Math.max(NODE_MINW, Math.ceil(w)+NODE_PADX)),
+              h:Math.max(34, out.length*NODE_LINEH+16) };
+  if(layoutCache.size>800) layoutCache.clear();
+  layoutCache.set(label,res);
+  return res;
+}
+const measureNode = n => layoutLabel(nodeLabel(n));
+function nodeRect(n){ const m=measureNode(n); return {x:n.x-m.w/2,y:n.y-m.h/2,w:m.w,h:m.h}; }
+function roundRect(g,x,y,w,h,r){
+  g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath();
+}
+function clip(g,s,max){
+  if(g.measureText(s).width<=max) return s;
+  let t=s; while(t.length>1 && g.measureText(t+"…").width>max) t=t.slice(0,-1);
+  return t+"…";
+}
+function nodeColor(n){ const t=typeOf(nodeTypeId(n)); return t?t.color:"#868e96"; }
+
+function render(target){
+  const g=target||ctx;
+  g.save(); g.clearRect(0,0,CW,CH);
+  g.fillStyle="#fff"; g.fillRect(0,0,CW,CH);
+  g.strokeStyle="#f1f3f5"; g.lineWidth=1;
+  for(let x=0;x<CW;x+=24){ g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,CH);g.stroke(); }
+  for(let y=0;y<CH;y+=24){ g.beginPath();g.moveTo(0,y+.5);g.lineTo(CW,y+.5);g.stroke(); }
+
+  g.lineCap="round";
+  S.scene.links.forEach(l=>{
+    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
+    if(!a||!b) return;
+    g.strokeStyle="#adb5bd"; g.lineWidth=1.6;
+    g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke();
+    const ang=Math.atan2(b.y-a.y,b.x-a.x), rb=nodeRect(b);
+    const t=Math.min(Math.abs((rb.w/2)/Math.cos(ang))||999, Math.abs((rb.h/2)/Math.sin(ang))||999);
+    const ex=b.x-Math.cos(ang)*t, ey=b.y-Math.sin(ang)*t;
+    g.fillStyle="#adb5bd"; g.beginPath(); g.moveTo(ex,ey);
+    g.lineTo(ex-Math.cos(ang-.4)*9, ey-Math.sin(ang-.4)*9);
+    g.lineTo(ex-Math.cos(ang+.4)*9, ey-Math.sin(ang+.4)*9);
+    g.closePath(); g.fill();
+  });
+  S.scene.strokes.forEach(s=>{
+    if(s.pts.length<2) return;
+    g.strokeStyle=s.color; g.lineWidth=s.size; g.lineJoin="round";
+    g.beginPath(); g.moveTo(s.pts[0].x,s.pts[0].y);
+    for(let i=1;i<s.pts.length;i++) g.lineTo(s.pts[i].x,s.pts[i].y);
+    g.stroke();
+  });
+  S.scene.nodes.forEach(n=>{
+    const m=measureNode(n), r=nodeRect(n), col=nodeColor(n);
+    g.fillStyle="#fff"; g.strokeStyle=col;
+    g.lineWidth=(selected&&selected.kind==="node"&&selected.id===n.id)?2.6:1.4;
+    roundRect(g,r.x,r.y,r.w,r.h,8); g.fill(); g.stroke();
+    g.fillStyle=col; g.beginPath(); g.arc(r.x+13,r.y+15,3.6,0,7); g.fill();
+    g.fillStyle="#1c1f24"; g.font=NODE_FONT; g.textBaseline="middle";
+    const top=n.y-((m.lines.length-1)*NODE_LINEH)/2;
+    m.lines.forEach((ln,i)=>g.fillText(ln, r.x+22, top+i*NODE_LINEH+1));
+    if(linkFrom===n.id){
+      g.strokeStyle="#2f6df6"; g.lineWidth=2; g.setLineDash([4,3]);
+      roundRect(g,r.x-4,r.y-4,r.w+8,r.h+8,10); g.stroke(); g.setLineDash([]);
+    }
+  });
+  S.scene.texts.forEach(t=>{
+    g.fillStyle=t.color; g.font=(11+t.size*2)+"px -apple-system,BlinkMacSystemFont,system-ui,sans-serif";
+    g.textBaseline="top"; g.fillText(t.text,t.x,t.y);
+    if(selected&&selected.kind==="text"&&selected.id===t.id){
+      const w=g.measureText(t.text).width, h=13+t.size*2;
+      g.strokeStyle="#2f6df6"; g.lineWidth=1; g.strokeRect(t.x-3,t.y-3,w+6,h+6);
+    }
+  });
+  g.restore();
+  const si=document.getElementById("selInfo");
+  if(si) si.textContent=S.scene.nodes.length+" nodes · "+S.scene.links.length+" links";
+  if(!target && typeof paintNodeType==="function") paintNodeType();
+}
+function hit(x,y){
+  for(let i=S.scene.nodes.length-1;i>=0;i--){
+    const n=S.scene.nodes[i], r=nodeRect(n);
+    if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) return {kind:"node",id:n.id,obj:n};
+  }
+  for(let i=S.scene.texts.length-1;i>=0;i--){
+    const t=S.scene.texts[i];
+    ctx.font=(11+t.size*2)+"px system-ui";
+    const w=ctx.measureText(t.text).width, h=13+t.size*2;
+    if(x>=t.x-3&&x<=t.x+w+3&&y>=t.y-3&&y<=t.y+h+3) return {kind:"text",id:t.id,obj:t};
+  }
+  return null;
+}
+const pos = e => { const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+
+cv.addEventListener("pointerdown", e=>{
+  cv.setPointerCapture(e.pointerId);
+  const p=pos(e), h=hit(p.x,p.y), tool=S.tool;
+  if(tool==="pen"){ snapshot(); drawing={color:S.color,size:S.size,pts:[p]}; S.scene.strokes.push(drawing); return; }
+  if(tool==="erase"){ snapshot(); if(h) removeItem(h); else eraseStrokeNear(p);
+                      render(); persist(); renderRight(); return; }
+  if(tool==="text"){
+    snapshot();
+    const t={id:nid("t"),x:p.x,y:p.y,text:"Text",color:S.color,size:S.size};
+    S.scene.texts.push(t); selected={kind:"text",id:t.id};
+    render(); openEditor(t,"text"); persist(); return;
+  }
+  if(tool==="link"){
+    if(h && h.kind==="node"){
+      if(linkFrom && linkFrom!==h.id){
+        snapshot(); S.scene.links.push({id:nid("l"),from:linkFrom,to:h.id}); linkFrom=null; persist();
+      } else linkFrom=h.id;
+    } else linkFrom=null;
+    render(); return;
+  }
+  selected = h ? {kind:h.kind,id:h.id} : null;
+  if(h){ snapshot(); drag={kind:h.kind,id:h.id,dx:p.x-h.obj.x,dy:p.y-h.obj.y}; }
+  render();
+});
+cv.addEventListener("pointermove", e=>{
+  const p=pos(e);
+  if(drawing){
+    const last=drawing.pts[drawing.pts.length-1];
+    if(Math.hypot(p.x-last.x,p.y-last.y) < 1.4) return;   /* thin the stroke: smaller saves */
+    drawing.pts.push({x:Math.round(p.x*10)/10, y:Math.round(p.y*10)/10});
+    render(); return;
+  }
+  if(drag){
+    const o = drag.kind==="node" ? S.scene.nodes.find(n=>n.id===drag.id)
+                                 : S.scene.texts.find(t=>t.id===drag.id);
+    if(o){ o.x=p.x-drag.dx; o.y=p.y-drag.dy; render(); }
+  }
+});
+function endPointer(){ if(drawing){ drawing=null; persist(); } if(drag){ drag=null; persist(); } }
+cv.addEventListener("pointerup", endPointer);
+cv.addEventListener("pointercancel", endPointer);
+cv.addEventListener("dblclick", e=>{ const p=pos(e), h=hit(p.x,p.y); if(h) openEditor(h.obj,h.kind); });
+
+function eraseStrokeNear(p){
+  for(let i=S.scene.strokes.length-1;i>=0;i--){
+    if(S.scene.strokes[i].pts.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<12)){ S.scene.strokes.splice(i,1); return; }
+  }
+}
+function removeItem(h){
+  if(h.kind==="node"){
+    /* taking a concept off the sketch is not the same as dropping it from the
+       ontology, so the concept stays in the list */
+    const n=S.scene.nodes.find(x=>x.id===h.id);
+    const label=n?nodeLabel(n):"";
+    S.scene.nodes=S.scene.nodes.filter(x=>x.id!==h.id);
+    S.scene.links=S.scene.links.filter(l=>l.from!==h.id&&l.to!==h.id);
+    if(label) toast("Removed “"+label+"” from the board — still in the concept list");
+  } else S.scene.texts=S.scene.texts.filter(t=>t.id!==h.id);
+  selected=null;
+}
+function openEditor(obj,kind){
+  if(!obj) return;
+  const r=cv.getBoundingClientRect(), wr=wrap.getBoundingClientRect();
+  editor.value = kind==="node" ? nodeLabel(obj) : obj.text;
+  editor.style.display="block";
+  editor.style.left=(obj.x-wr.left+r.left-60)+"px";
+  editor.style.top =(obj.y-wr.top +r.top -14)+"px";
+  editor._target={obj,kind};
+  /* the browser moves focus to the canvas after our pointerdown handler returns,
+     which used to blur (and so commit-and-close) the editor immediately */
+  setTimeout(()=>{ if(editor.style.display!=="none"){ editor.focus(); editor.select(); } },0);
+}
+function closeEditor(commit){
+  if(editor.style.display==="none") return;
+  const t=editor._target;
+  if(commit && t){
+    snapshot();
+    const v=editor.value.trim();
+    if(t.kind==="node"){
+      const c=conceptOf(t.obj);           /* the node is the concept: rename both */
+      if(c) c.label = v || c.label;
+    }
+    else { if(v) t.obj.text=v; else removeItem({kind:"text",id:t.obj.id}); }
+    persist();
+  }
+  editor.style.display="none"; editor._target=null; render(); renderRight();
+}
+editor.addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ e.preventDefault(); closeEditor(true); }
+  if(e.key==="Escape"){ e.preventDefault(); closeEditor(false); }
+  e.stopPropagation();
+});
+editor.addEventListener("blur", ()=>closeEditor(true));
+
+function placeNode(concept, x, y){
+  if(!concept) return null;
+  const existing=S.scene.nodes.find(n=>n.cid===concept.id);
+  if(existing){                       /* already sketched — just select it */
+    selected={kind:"node",id:existing.id}; render();
+    toast("“"+concept.label+"” is already on the board");
+    return existing;
+  }
+  snapshot();
+  let px=x, py=y;
+  if(px==null){
+    const colW=210, rowH=56, pad=40;
+    const cols=Math.max(1,Math.floor((CW-pad*2)/colW)), k=S.scene.nodes.length;
+    px=pad+colW/2+(k%cols)*colW; py=pad+rowH/2+Math.floor(k/cols)*rowH;
+    if(py>CH-pad){ px=CW/2+(Math.random()*120-60); py=CH/2+(Math.random()*120-60); }
+  }
+  const n={id:nid("n"), cid:concept.id, x:px, y:py};
+  if(x==null){                       /* nodes are taller now, so nudge clear of neighbours */
+    const overlaps=()=>{
+      const a=nodeRect(n);
+      return S.scene.nodes.some(o=>{
+        const b=nodeRect(o);
+        return !(a.x>b.x+b.w+6 || a.x+a.w+6<b.x || a.y>b.y+b.h+6 || a.y+a.h+6<b.y);
+      });
+    };
+    let guard=0;
+    while(overlaps() && guard++<40){
+      n.y+=22;
+      if(n.y>CH-40){ n.y=60; n.x+=210; }
+      if(n.x>CW-60){ n.x=CW/2+(Math.random()*160-80); n.y=CH/2+(Math.random()*160-80); break; }
+    }
+  }
+  S.scene.nodes.push(n); selected={kind:"node",id:n.id};
+  render(); persist(); renderRight(); return n;
+}
+/* Sketching a brand-new concept on the board adds it to the concept list too,
+   so nothing a student thinks of on the canvas escapes the ontology. */
+function addConceptNode(label, x, y){
+  const c={id:nid("c"), label:label||"New concept", type:null, sub:null, mine:true};
+  S.concepts.push(c);
+  return placeNode(c, x, y);
+}
+wrap.addEventListener("dragover", e=>{ e.preventDefault(); wrap.classList.add("dragover"); });
+wrap.addEventListener("dragleave", ()=>wrap.classList.remove("dragover"));
+wrap.addEventListener("drop", e=>{
+  e.preventDefault(); wrap.classList.remove("dragover");
+  const c=S.concepts.find(c=>c.id===e.dataTransfer.getData("text/concept-id"));
+  if(!c) return;
+  const r=cv.getBoundingClientRect();
+  placeNode(c, e.clientX-r.left, e.clientY-r.top);
+});
+
+function setTool(name){
+  S.tool=name; linkFrom=null;
+  document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("on", x.dataset.tool===name));
+  cv.style.cursor = name==="pen"?"crosshair": name==="text"?"text": name==="erase"?"cell":"default";
+  paintInk(); render(); persist();
+}
+document.querySelectorAll(".tool").forEach(b=>{
+  b.addEventListener("click", ()=>setTool(b.dataset.tool));
+});
+const colBox=document.getElementById("colors");
+const INK_TOOLS={pen:1,text:1};
+function paintNodeType(){
+  const wrap=document.getElementById("nodeTypeWrap"), sel=document.getElementById("nodeType");
+  const hints=document.getElementById("boardHints");
+  const n = (selected && selected.kind==="node") ? S.scene.nodes.find(x=>x.id===selected.id) : null;
+  const c = n ? conceptOf(n) : null;
+  wrap.classList.toggle("on", !!c);
+  hints.style.display = c ? "none" : "";
+  if(!c) return;
+  document.getElementById("nodeTypeName").textContent = c.label;
+  fillCatSelect(sel, catValue(c), {blank:true});
+  sel.onchange = ()=>{ applyCatValue(c, sel.value); persist(); render(); renderRight(); };
+}
+function paintInk(){
+  colBox.querySelectorAll(".swatch").forEach(x=>x.classList.toggle("on", x.dataset.color===S.color));
+  document.getElementById("sizeRange").value=S.size||2;
+  document.getElementById("inkGroup").classList.toggle("idle", !INK_TOOLS[S.tool]);
+  paintNodeType();
+}
+/* Colour and thickness only mean anything to Draw and Text, so reaching for
+   them from another tool switches over instead of silently doing nothing. */
+function ensureInkTool(){
+  if(INK_TOOLS[S.tool]) return false;
+  setTool("pen"); toast("Switched to Draw");
+  return true;
+}
+PALETTE.forEach(c=>{
+  const b=document.createElement("button");
+  b.className="swatch"; b.style.background=c; b.title=c; b.dataset.color=c;
+  b.addEventListener("click",()=>{ S.color=c; ensureInkTool(); paintInk(); persist(); });
+  colBox.appendChild(b);
+});
+document.getElementById("sizeRange").addEventListener("input",e=>{
+  S.size=+e.target.value; ensureInkTool(); paintInk(); persist();
+});
+document.getElementById("bUndo").addEventListener("click",undo);
+document.getElementById("bRedo").addEventListener("click",redo);
+document.getElementById("bAddNode").addEventListener("click",()=>openEditor(addConceptNode("New concept"),"node"));
+document.getElementById("bClear").addEventListener("click",function(){
+  twoStep(this,"Clear it?",()=>{
+    snapshot(); S.scene={strokes:[],nodes:[],texts:[],links:[]};
+    selected=null; render(); persist(); renderRight(); toast("Board cleared — Ctrl+Z to undo");
+  });
+});
+document.addEventListener("keydown", e=>{
+  const a=document.activeElement;
+  if(/INPUT|TEXTAREA|SELECT/.test(a.tagName) || a.isContentEditable) return;
+  if((e.key==="Delete"||e.key==="Backspace") && selected){
+    e.preventDefault(); snapshot(); removeItem(selected); render(); persist(); renderRight();
+  }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey?redo():undo(); }
+});
+
+/* =========================================================
+   3. Right panel
+   ========================================================= */
+const q = () => document.getElementById("search").value.trim().toLowerCase();
+const onBoard = c => S.scene.nodes.some(n=>n.cid===c.id);
+
+function iconBtn(txt,title,fn){
+  const b=document.createElement("button");
+  b.className="icb"; b.textContent=txt; b.title=title;
+  b.addEventListener("click",e=>{ e.stopPropagation(); fn.call(b,e); });
+  return b;
+}
+function conceptRow(c,opts){
+  opts=opts||{};
+  const li=document.createElement("li");
+  li.className="crow"+(onBoard(c)?" used":"");
+  li.draggable=true;
+  li.addEventListener("dragstart", e=>{
+    e.dataTransfer.setData("text/concept-id", c.id);
+    e.dataTransfer.setData("text/plain", c.label);
+    e.dataTransfer.effectAllowed="copy";
+  });
+  li.addEventListener("dblclick", ()=>{
+    if(lbl.isContentEditable) return;
+    placeNode(c);
+  });
+
+  const dot=document.createElement("span");
+  dot.className="dot"; dot.style.background=catColor(c); li.appendChild(dot);
+
+  const lbl=document.createElement("span");
+  lbl.className="lbl"; lbl.textContent=c.label;
+  lbl.title="Double-click the row → add to board  /  ✎ → rename";
+  function startEdit(){
+    lbl.contentEditable="true"; lbl.focus();
+    const sel=document.getSelection(); sel.removeAllRanges();
+    const rg=document.createRange(); rg.selectNodeContents(lbl); sel.addRange(rg);
+  }
+  lbl.addEventListener("keydown", e=>{
+    if(e.key==="Enter"){ e.preventDefault(); lbl.blur(); }
+    if(e.key==="Escape"){ lbl.textContent=c.label; lbl.blur(); }
+    e.stopPropagation();
+  });
+  lbl.addEventListener("blur", ()=>{
+    lbl.contentEditable="false";
+    const v=lbl.textContent.trim();
+    if(v && v!==c.label){ c.label=v; persist(); renderRight(); } else lbl.textContent=c.label;
+  });
+  li.appendChild(lbl);
+
+  if(!opts.hideCat){
+    const cat=document.createElement("span");
+    cat.className="cat"; cat.textContent=catLabel(c); li.appendChild(cat);
+  }
+  if(c.mine && S.concepts.some(x=>!x.mine)){
+    const t=document.createElement("span"); t.className="tag-mine"; t.textContent="added by me";
+    li.appendChild(t);
+  }
+
+  const acts=document.createElement("span"); acts.className="acts";
+  acts.appendChild(iconBtn("+","Add to board",()=>placeNode(c)));
+  acts.appendChild(iconBtn("✎","Rename",startEdit));
+  acts.appendChild(iconBtn("⇄","Recategorize",()=>{
+    if(li.querySelector(".miniSel")) return;
+    const s=document.createElement("select"); s.className="miniSel";
+    fillCatSelect(s, catValue(c), {blank:true});
+    s.addEventListener("change",()=>{ applyCatValue(c,s.value); persist(); renderRight(); });
+    s.addEventListener("blur",()=>renderRight());
+    li.insertBefore(s,acts); s.focus();
+  }));
+  const d=iconBtn("✕","Delete (click again to confirm)",function(){
+    twoStep(this,"Sure?",()=>{
+      const gone=S.scene.nodes.filter(n=>n.cid===c.id).map(n=>n.id);
+      S.scene.nodes=S.scene.nodes.filter(n=>n.cid!==c.id);
+      S.scene.links=S.scene.links.filter(l=>gone.indexOf(l.from)<0 && gone.indexOf(l.to)<0);
+      S.concepts=S.concepts.filter(x=>x.id!==c.id);
+      persist(); render(); renderRight(); toast("Deleted “"+c.label+"”");
+    });
+  });
+  d.classList.add("del"); acts.appendChild(d);
+  li.appendChild(acts);
+  return li;
+}
+
+function renderRaw(){
+  const ul=document.getElementById("rawList"); ul.innerHTML="";
+  const term=q();
+  const list=S.concepts.filter(c=>!term||c.label.toLowerCase().includes(term));
+  if(!list.length){
+    ul.innerHTML='<div class="empty">No concepts yet.<br>Add them above, or paste in the ontology your instructor gives you.</div>';
+    return;
+  }
+  list.forEach(c=>ul.appendChild(conceptRow(c)));
+}
+
+let pendingAdd=null, pendingSubType=null, pendingColor=null;
+function inlineAddBox(type, sub){
+  const row=document.createElement("div"); row.className="inlineAdd";
+  const i=document.createElement("input");
+  i.placeholder="New concept in "+(sub?subOf(sub).name:typeOf(type).name);
+  const ok=document.createElement("button"); ok.className="btn primary"; ok.textContent="Add";
+  const commit=()=>{
+    const v=i.value.trim();
+    if(v){ S.concepts.push({id:nid("c"),label:v,type:type,sub:sub||null,mine:true}); i.value=""; }
+    persist(); renderRight();
+    const again=document.querySelector(".inlineAdd input"); if(again) again.focus();
+  };
+  i.addEventListener("keydown",e=>{
+    e.stopPropagation();
+    if(e.key==="Enter") commit();
+    if(e.key==="Escape"){ pendingAdd=null; renderRight(); }
+  });
+  ok.addEventListener("click",commit);
+  const cancel=document.createElement("button"); cancel.className="btn ghost"; cancel.textContent="Close";
+  cancel.addEventListener("click",()=>{ pendingAdd=null; renderRight(); });
+  row.appendChild(i); row.appendChild(ok); row.appendChild(cancel);
+  setTimeout(()=>i.focus(),0);
+  return row;
+}
+function renderCats(){
+  const box=document.getElementById("catList"); box.innerHTML="";
+  const term=q();
+  const match=c=>!term||c.label.toLowerCase().includes(term);
+
+  S.types.forEach(t=>{
+    const mine=S.concepts.filter(c=>c.type===t.id && match(c));
+    const blk=document.createElement("div");
+    blk.className="typeBlock"+(S.closedTypes[t.id]?" closed":"");
+
+    const head=document.createElement("div"); head.className="typeHead";
+    const arrow=document.createElement("span");
+    arrow.className="arrow"; arrow.textContent=S.closedTypes[t.id]?"▶":"▼";
+    arrow.addEventListener("click",()=>{ S.closedTypes[t.id]=!S.closedTypes[t.id]; persist(); renderRight(); });
+    head.appendChild(arrow);
+
+    const dot=document.createElement("button");
+    dot.className="typeDot"; dot.style.background=t.color; dot.title="Change this type's colour";
+    dot.addEventListener("click",e=>{ e.stopPropagation(); pendingColor = pendingColor===t.id?null:t.id; renderRight(); });
+    head.appendChild(dot);
+
+    const nm=document.createElement("span"); nm.className="name"; nm.textContent=t.name;
+    nm.title="Click to rename this type";
+    nm.addEventListener("click",e=>{
+      e.stopPropagation();
+      if(nm.isContentEditable) return;
+      nm.contentEditable="true"; nm.focus();
+      const sel=document.getSelection(); sel.removeAllRanges();
+      const rg=document.createRange(); rg.selectNodeContents(nm); sel.addRange(rg);
+    });
+    nm.addEventListener("keydown",e=>{ e.stopPropagation();
+      if(e.key==="Enter"){ e.preventDefault(); nm.blur(); }
+      if(e.key==="Escape"){ nm.textContent=t.name; nm.blur(); } });
+    nm.addEventListener("blur",()=>{
+      nm.contentEditable="false";
+      const v=nm.textContent.trim();
+      if(v && v!==t.name){ t.name=v; persist(); renderRight(); } else nm.textContent=t.name;
+    });
+    head.appendChild(nm);
+
+    const cnt=document.createElement("span"); cnt.className="cnt"; cnt.textContent=mine.length;
+    head.appendChild(cnt);
+    head.appendChild(iconBtn("+","Add a concept to this type",()=>{
+      S.closedTypes[t.id]=false; pendingAdd={type:t.id,sub:null}; pendingSubType=null; persist(); renderRight();
+    }));
+    head.appendChild(iconBtn("⊞","Add a subtype",()=>{
+      S.closedTypes[t.id]=false; pendingSubType=t.id; pendingAdd=null; persist(); renderRight();
+    }));
+    const tdel=iconBtn("✕","Delete this type (click again; its concepts become uncategorized)",function(){
+      twoStep(this,"Sure?",()=>{
+        S.concepts.forEach(c=>{ if(c.type===t.id){ c.type=null; c.sub=null; } });
+        S.subs=S.subs.filter(x=>x.type!==t.id);
+        S.types=S.types.filter(x=>x.id!==t.id);
+        S.ont.forEach(r=>{ delete r[t.id]; });
+        persist(); renderRight();
+      });
+    });
+    tdel.classList.add("del"); head.appendChild(tdel);
+    blk.appendChild(head);
+
+    const body=document.createElement("div"); body.className="typeBody";
+
+    if(pendingColor===t.id){
+      const pop=document.createElement("div"); pop.className="colorPop";
+      TYPE_COLORS.forEach(col=>{
+        const b=document.createElement("button");
+        b.style.background=col; if(col===t.color) b.classList.add("on"); b.title=col;
+        b.addEventListener("click",()=>{ t.color=col; pendingColor=null; persist(); render(); renderRight(); });
+        pop.appendChild(b);
+      });
+      body.appendChild(pop);
+    }
+    if(pendingSubType===t.id){
+      const row=document.createElement("div"); row.className="inlineAdd";
+      const i=document.createElement("input"); i.placeholder="New subtype under "+t.name;
+      const ok=document.createElement("button"); ok.className="btn primary"; ok.textContent="Create";
+      const commit=()=>{
+        const v=i.value.trim();
+        if(v){
+          let id=t.id+"::"+slug(v);
+          while(S.subs.some(s=>s.id===id)) id+="-"+Math.floor(Math.random()*90+10);
+          S.subs.push({id, type:t.id, name:v, mine:true});
+        }
+        pendingSubType=null; persist(); renderRight();
+      };
+      i.addEventListener("keydown",e=>{ e.stopPropagation();
+        if(e.key==="Enter") commit();
+        if(e.key==="Escape"){ pendingSubType=null; renderRight(); } });
+      ok.addEventListener("click",commit);
+      const cancel=document.createElement("button"); cancel.className="btn ghost"; cancel.textContent="Close";
+      cancel.addEventListener("click",()=>{ pendingSubType=null; renderRight(); });
+      row.appendChild(i); row.appendChild(ok); row.appendChild(cancel);
+      body.appendChild(row); setTimeout(()=>i.focus(),0);
+    }
+
+    const direct=mine.filter(c=>!c.sub);
+    if(pendingAdd && pendingAdd.type===t.id && !pendingAdd.sub) body.appendChild(inlineAddBox(t.id,null));
+    if(direct.length){
+      const ul=document.createElement("ul"); ul.className="clist";
+      direct.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
+      body.appendChild(ul);
+    }
+
+    S.subs.filter(s=>s.type===t.id).forEach(sb=>{
+      const items=mine.filter(c=>c.sub===sb.id);
+      const sh=document.createElement("div"); sh.className="subHead";
+      const nm=document.createElement("span"); nm.className="sname";
+      nm.textContent=sb.name+" ("+items.length+")";
+      sh.appendChild(nm);
+      sh.appendChild(iconBtn("+","Add a concept here",()=>{
+        pendingAdd={type:t.id,sub:sb.id}; pendingSubType=null; renderRight();
+      }));
+      if(sb.mine){
+        const dl=iconBtn("✕","Delete this subtype (its concepts stay in the type)",function(){
+          twoStep(this,"Sure?",()=>{
+            S.concepts.forEach(c=>{ if(c.sub===sb.id) c.sub=null; });
+            S.subs=S.subs.filter(x=>x.id!==sb.id); persist(); renderRight();
+          });
+        });
+        dl.classList.add("del"); sh.appendChild(dl);
+      }
+      body.appendChild(sh);
+      if(pendingAdd && pendingAdd.sub===sb.id) body.appendChild(inlineAddBox(t.id,sb.id));
+      if(items.length){
+        const ul=document.createElement("ul"); ul.className="clist";
+        items.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
+        body.appendChild(ul);
+      }
+    });
+
+    if(!mine.length && pendingSubType!==t.id && !(pendingAdd && pendingAdd.type===t.id))
+      body.insertAdjacentHTML("beforeend",'<div class="empty" style="padding:8px">Empty</div>');
+    blk.appendChild(body); box.appendChild(blk);
+  });
+
+  const un=S.concepts.filter(c=>!c.type && match(c));
+  if(un.length){
+    const blk=document.createElement("div"); blk.className="typeBlock";
+    blk.innerHTML='<div class="typeHead"><span class="arrow">▼</span>'+
+      '<span style="width:9px;height:9px;border-radius:50%;background:#adb5bd"></span>'+
+      '<span class="name">Uncategorized</span><span class="cnt">'+un.length+'</span></div>';
+    const body=document.createElement("div"); body.className="typeBody";
+    const ul=document.createElement("ul"); ul.className="clist";
+    un.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
+    body.appendChild(ul); blk.appendChild(body); box.appendChild(blk);
+  }
+}
+
+/* ---- causal outliner ---- */
+function renderCausal(){
+  const box=document.getElementById("causalList"); box.innerHTML="";
+  if(!S.causal.length) S.causal=[{id:nid("r"),depth:0,text:""}];
+  S.causal.forEach((row,idx)=>{
+    const d=document.createElement("div"); d.className="cRow";
+    for(let i=0;i<row.depth;i++){
+      const g=document.createElement("span"); g.className="depthGuide"; g.style.marginLeft="9px"; d.appendChild(g);
+    }
+    const bullet=document.createElement("span"); bullet.className="bullet";
+    bullet.textContent=row.depth===0?"●":"→"; d.appendChild(bullet);
+
+    const inp=document.createElement("input"); inp.className="ci"; inp.value=row.text;
+    inp.placeholder = row.depth===0 ? "A cause, concept or condition" : "…and what follows from it";
+    inp.dataset.idx=idx;
+    inp.addEventListener("input",()=>{ row.text=inp.value; persist(); });
+    d.appendChild(inp);
+
+    const acts=document.createElement("span"); acts.className="acts";
+    acts.appendChild(iconBtn("⇥","Indent (Tab)",()=>setDepth(idx,row.depth+1)));
+    acts.appendChild(iconBtn("⇤","Outdent (Shift+Tab)",()=>setDepth(idx,row.depth-1)));
+    acts.appendChild(iconBtn("+","Add to the board as a concept",()=>{
+      const t=row.text.trim(); if(!t) return;
+      const hit=S.concepts.find(c=>c.label.toLowerCase()===t.toLowerCase());
+      hit ? placeNode(hit) : addConceptNode(t);
+    }));
+    const del=iconBtn("✕","Delete line",()=>{
+      S.causal.splice(idx,1);
+      if(!S.causal.length) S.causal=[{id:nid("r"),depth:0,text:""}];
+      persist(); renderCausal();
+    });
+    del.classList.add("del"); acts.appendChild(del);
+    d.appendChild(acts); box.appendChild(d);
+  });
+}
+function setDepth(idx,d){
+  const row=S.causal[idx]; if(!row) return;
+  row.depth=Math.max(0,Math.min(6,d)); persist(); renderCausal(); focusCausal(idx);
+}
+document.getElementById("causalList").addEventListener("keydown", e=>{
+  const inp=e.target;
+  if(!inp.classList || !inp.classList.contains("ci")) return;
+  causalKey(e, +inp.dataset.idx, inp);
+}, true);
+function causalKey(e, idx, inp){
+  e.stopPropagation();
+  const rows=S.causal, row=rows[idx]; if(!row) return;
+  if(e.key==="Tab"){ e.preventDefault(); setDepth(idx, row.depth+(e.shiftKey?-1:1)); }
+  else if(e.key==="Enter"){
+    e.preventDefault();
+    rows.splice(idx+1,0,{id:nid("r"),depth:row.depth,text:""});
+    persist(); renderCausal(); focusCausal(idx+1);
+  }
+  else if(e.key==="Backspace" && inp.value===""){
+    e.preventDefault();
+    if(row.depth>0){ row.depth--; persist(); renderCausal(); focusCausal(idx); }
+    else if(rows.length>1){ rows.splice(idx,1); persist(); renderCausal(); focusCausal(Math.max(0,idx-1)); }
+  }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); focusCausal(idx-1); }
+  else if(e.key==="ArrowDown"){ e.preventDefault(); focusCausal(idx+1); }
+}
+function focusCausal(i){
+  const list=document.querySelectorAll("#causalList input.ci");
+  if(i<0) i=0; if(i>=list.length) i=list.length-1;
+  if(list[i]){ list[i].focus(); list[i].setSelectionRange(list[i].value.length,list[i].value.length); }
+}
+document.getElementById("bCausalSeed").addEventListener("click",()=>{
+  const v=document.getElementById("seedCat").value;
+  let pool;
+  if(v==="__board__")        pool=S.scene.nodes.map(nodeLabel);
+  else if(v==="__all__")     pool=S.concepts.map(c=>c.label);
+  else if(v.indexOf("::")>0) pool=S.concepts.filter(c=>c.sub===v).map(c=>c.label);
+  else                       pool=S.concepts.filter(c=>c.type===v).map(c=>c.label);
+  if(!pool.length){ toast("Nothing to pull in"); return; }
+  while(S.causal.length && !S.causal[S.causal.length-1].text.trim()) S.causal.pop();
+  pool.forEach(t=>S.causal.push({id:nid("r"),depth:0,text:t}));
+  S.causal.push({id:nid("r"),depth:0,text:""});
+  persist(); renderCausal(); toast("Pulled in "+pool.length+" lines");
+});
+document.getElementById("bCausalClear").addEventListener("click",function(){
+  twoStep(this,"Clear it?",()=>{ S.causal=[{id:nid("r"),depth:0,text:""}]; persist(); renderCausal(); });
+});
+
+/* ---- ontology table: one column per concept type ---- */
+function renderOnt(){
+  const box=document.getElementById("ontWrap");
+  const tb=document.createElement("table"); tb.className="ont";
+  const thead=document.createElement("thead"), tr=document.createElement("tr");
+  S.types.forEach(t=>{
+    const th=document.createElement("th"); th.textContent=t.name;
+    th.style.borderTop="3px solid "+t.color; tr.appendChild(th);
+  });
+  const thx=document.createElement("th"); thx.style.width="26px"; tr.appendChild(thx);
+  thead.appendChild(tr); tb.appendChild(thead);
+
+  const tbody=document.createElement("tbody");
+  S.ont.forEach((row,ri)=>{
+    const r=document.createElement("tr");
+    S.types.forEach(t=>{
+      const td=document.createElement("td");
+      const ta=document.createElement("textarea");
+      ta.value=row[t.id]||"";
+      ta.addEventListener("input",()=>{ row[t.id]=ta.value; persist(); });
+      ta.addEventListener("keydown",e=>e.stopPropagation());
+      td.addEventListener("dragover",e=>{ e.preventDefault(); td.style.background="#eef4ff"; });
+      td.addEventListener("dragleave",()=>td.style.background="");
+      td.addEventListener("drop",e=>{
+        e.preventDefault(); td.style.background="";
+        const cc=S.concepts.find(x=>x.id===e.dataTransfer.getData("text/concept-id"));
+        if(!cc) return;
+        ta.value = ta.value ? ta.value+"\n"+cc.label : cc.label;
+        row[t.id]=ta.value; persist();
+      });
+      td.appendChild(ta); r.appendChild(td);
+    });
+    const tdx=document.createElement("td"); tdx.className="rowdel";
+    const b=iconBtn("✕","Delete row",()=>{ S.ont.splice(ri,1); persist(); renderOnt(); });
+    b.classList.add("del"); tdx.appendChild(b); r.appendChild(tdx);
+    tbody.appendChild(r);
+  });
+  tb.appendChild(tbody);
+  box.innerHTML=""; box.appendChild(tb);
+}
+document.getElementById("bAddOntRow").addEventListener("click",()=>{ S.ont.push(blankOntRow()); persist(); renderOnt(); });
+
+function renderRight(){
+  renderRaw(); renderCats(); renderCausal(); renderOnt();
+
+  const sel=document.getElementById("newRawCat");
+  const keep=sel.value; fillCatSelect(sel, null, {blank:true});
+  if(keep) sel.value=keep;
+
+  const seed=document.getElementById("seedCat");
+  const keep2=seed.value; seed.innerHTML="";
+  const opt=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;seed.appendChild(o);};
+  opt("__board__","On the board ("+S.scene.nodes.length+")");
+  S.types.forEach(t=>{
+    const g=document.createElement("optgroup"); g.label=t.name;
+    const n=S.concepts.filter(c=>c.type===t.id).length;
+    const o=document.createElement("option"); o.value=t.id; o.textContent=t.name+" — all ("+n+")"; g.appendChild(o);
+    S.subs.filter(s=>s.type===t.id).forEach(s=>{
+      const k=S.concepts.filter(c=>c.sub===s.id).length;
+      const oo=document.createElement("option"); oo.value=s.id; oo.textContent=s.name+" ("+k+")"; g.appendChild(oo);
+    });
+    seed.appendChild(g);
+  });
+  opt("__all__","All concepts ("+S.concepts.length+")");
+  if(keep2) seed.value=keep2;
+}
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));
+    document.querySelectorAll(".pane").forEach(x=>x.classList.remove("on"));
+    t.classList.add("on");
+    document.getElementById("pane-"+t.dataset.pane).classList.add("on");
+  });
+});
+document.getElementById("search").addEventListener("input",()=>{ renderRaw(); renderCats(); });
+
+function addRawConcept(){
+  const i=document.getElementById("newRaw"), s=document.getElementById("newRawCat");
+  const v=i.value.trim(); if(!v) return;
+  const c={id:nid("c"), label:v, type:null, sub:null, mine:true};
+  applyCatValue(c, s.value);
+  S.concepts.push(c); i.value=""; persist(); renderRight(); i.focus();
+}
+document.getElementById("bAddType").addEventListener("click",()=>{
+  const i=document.getElementById("newTypeName"), v=i.value.trim(); if(!v) return;
+  let id="t_"+slug(v); while(S.types.some(t=>t.id===id)) id+="-"+Math.floor(Math.random()*90+10);
+  S.types.push({id, name:v, color:TYPE_COLORS[S.types.length%TYPE_COLORS.length]});
+  S.ont.forEach(r=>{ if(r[id]===undefined) r[id]=""; });
+  i.value=""; persist(); renderRight();
+});
+document.getElementById("newTypeName").addEventListener("keydown",e=>{
+  if(e.key==="Enter") document.getElementById("bAddType").click(); e.stopPropagation();
+});
+document.getElementById("bAddRaw").addEventListener("click",addRawConcept);
+document.getElementById("newRaw").addEventListener("keydown",e=>{ if(e.key==="Enter") addRawConcept(); e.stopPropagation(); });
+
+["mName","mTitle"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",e=>{
+    S.meta[id==="mName"?"name":"title"]=e.target.value; persist();
+  });
+});
+
+/* =========================================================
+   3b. Notes
+   ========================================================= */
+const noteEl=document.getElementById("noteArea");
+const notesBox=document.getElementById("notes");
+const noteGrip=document.getElementById("noteGrip");
+function applyNotes(){
+  noteEl.value=S.notes||"";
+  notesBox.classList.toggle("closed", S.noteOpen===false);
+  notesBox.style.height=(S.noteOpen===false)?"":(S.noteH||150)+"px";
+  noteGrip.style.display=(S.noteOpen===false)?"none":"";
+  document.getElementById("bNoteToggle").textContent=(S.noteOpen===false)?"▴":"▾";
+  updNoteCount();
+}
+function updNoteCount(){
+  const t=(S.notes||"").trim();
+  document.getElementById("noteCount").textContent = t ? t.split(/\s+/).length+" words" : "";
+}
+noteEl.addEventListener("input",()=>{ S.notes=noteEl.value; updNoteCount(); persist(); });
+noteEl.addEventListener("keydown",e=>e.stopPropagation());
+document.getElementById("bNoteToggle").addEventListener("click",()=>{
+  S.noteOpen=(S.noteOpen===false); applyNotes(); persist(); resizeCanvas();
+});
+(function(){
+  let on=false;
+  noteGrip.addEventListener("pointerdown",e=>{ on=true; noteGrip.setPointerCapture(e.pointerId); });
+  noteGrip.addEventListener("pointermove",e=>{
+    if(!on) return;
+    const h=Math.min(window.innerHeight-220, Math.max(60, window.innerHeight-e.clientY-8));
+    S.noteH=h; notesBox.style.height=h+"px"; resizeCanvas();
+  });
+  noteGrip.addEventListener("pointerup",()=>{ if(on){ on=false; persist(); } });
+})();
+
+/* =========================================================
+   4. Versions — one snapshot per ontologizing session
+   ========================================================= */
+const SNAP_KEYS=["meta","types","subs","concepts","causal","ont","scene","notes"];
+const grabSnap = () => { const o={}; SNAP_KEYS.forEach(k=>o[k]=JSON.parse(JSON.stringify(S[k]))); return o; };
+const putSnap  = sn => SNAP_KEYS.forEach(k=>{ if(sn[k]!==undefined) S[k]=JSON.parse(JSON.stringify(sn[k])); });
+
+function nextLabel(){ return "Session "+(S.versions.filter(v=>!v.auto).length+1); }
+function saveVersion(label, auto){
+  const v={id:nid("v"), label:label||nextLabel(), ts:Date.now(), auto:!!auto, snap:grabSnap()};
+  S.versions.unshift(v);
+  if(auto){ let seen=0; S.versions=S.versions.filter(x=>!x.auto || ++seen<=3); }
+  dirty=true; writeNow();
+  if(!storageOK){                       /* over the quota: roll back and say so */
+    S.versions=S.versions.filter(x=>x.id!==v.id);
+    dirty=true; storageOK=true; writeNow();
+    toast("Not enough room in this browser. Delete an old version, or use Backup.");
+    renderVersions(); paintVersionCount(); return null;
+  }
+  renderVersions(); paintVersionCount();
+  return v;
+}
+function paintVersionCount(){
+  document.getElementById("bVersions").textContent="Versions ("+S.versions.length+")";
+}
+function fmtTs(ts){
+  const d=new Date(ts), p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes());
+}
+function snapStats(sn){
+  const w=(sn.notes||"").trim();
+  return sn.concepts.length+" concepts · "+sn.scene.nodes.length+" nodes · "+
+         sn.causal.filter(r=>r.text.trim()).length+" causal lines · "+
+         (w?w.split(/\s+/).length:0)+" words of notes";
+}
+function storeBytes(){ try{ return (localStorage.getItem(STORE_KEY)||"").length; }catch(e){ return 0; } }
+function renderVersions(){
+  const list=document.getElementById("verList"); list.innerHTML="";
+  const bytes=storeBytes(), pct=Math.min(100, Math.round(bytes/5000000*100));
+  document.getElementById("verHint").textContent=
+    "Stored in this browser on this computer. About "+Math.round(bytes/1024)+" KB used of roughly 5 MB.";
+  const fill=document.getElementById("storeFill");
+  fill.style.width=pct+"%"; fill.className = pct>80 ? "warn" : "";
+
+  if(!S.versions.length){
+    list.innerHTML='<div class="empty">No versions yet.<br>Press <b>Save version</b> at the end of a session.</div>';
+    return;
+  }
+  S.versions.forEach(v=>{
+    const row=document.createElement("div"); row.className="verRow"+(v.auto?" auto":"");
+    const top=document.createElement("div"); top.className="vtop";
+    const lb=document.createElement("div"); lb.className="vlabel"; lb.contentEditable="true"; lb.textContent=v.label;
+    lb.addEventListener("keydown",e=>{ e.stopPropagation(); if(e.key==="Enter"){ e.preventDefault(); lb.blur(); } });
+    lb.addEventListener("blur",()=>{ const t=lb.textContent.trim(); if(t){ v.label=t; persist(); } else lb.textContent=v.label; });
+    top.appendChild(lb); row.appendChild(top);
+
+    const meta=document.createElement("div"); meta.className="vmeta";
+    meta.textContent=fmtTs(v.ts)+(v.auto?"  ·  automatic backup":"")+"\n"+snapStats(v.snap);
+    row.appendChild(meta);
+
+    const acts=document.createElement("div"); acts.className="vacts";
+    const rb=document.createElement("button"); rb.className="btn"; rb.textContent="Restore";
+    rb.title="Replace what is on screen with this version. Your current work is backed up first.";
+    rb.addEventListener("click",function(){ twoStep(this,"Restore?",()=>restoreVersion(v)); });
+    const eb=document.createElement("button"); eb.className="btn"; eb.textContent="⤓ Word";
+    eb.title="Ontology table, causal view, concept list, links and notes for this version";
+    eb.addEventListener("click",()=>exportVersion(v,"doc"));
+    const pb=document.createElement("button"); pb.className="btn"; pb.textContent="⤓ PNG";
+    pb.title="Snapshot of the board as it looked in this version";
+    pb.addEventListener("click",()=>exportVersion(v,"png"));
+    const db=document.createElement("button"); db.className="btn ghost"; db.textContent="Delete";
+    db.addEventListener("click",function(){
+      twoStep(this,"Delete?",()=>{
+        S.versions=S.versions.filter(x=>x.id!==v.id);
+        dirty=true; writeNow(); renderVersions(); paintVersionCount();
+      });
+    });
+    acts.appendChild(rb); acts.appendChild(eb); acts.appendChild(pb); acts.appendChild(db);
+    row.appendChild(acts); list.appendChild(row);
+  });
+}
+function restoreVersion(v){
+  saveVersion("Before restoring "+v.label, true);
+  putSnap(v.snap);
+  history.length=0; future.length=0; updUndo();
+  document.getElementById("mName").value=S.meta.name||"";
+  document.getElementById("mTitle").value=S.meta.title||"";
+  applyNotes(); render(); renderRight();
+  dirty=true; writeNow(); renderVersions(); paintVersionCount();
+  toast("Restored “"+v.label+"”");
+}
+document.getElementById("bSaveVer").addEventListener("click",e=>{
+  e.stopPropagation();
+  const v=saveVersion(null,false);
+  if(v){ document.getElementById("verPanel").classList.add("on"); toast("Saved “"+v.label+"”"); }
+});
+document.getElementById("bVerClose").addEventListener("click",e=>{
+  e.stopPropagation(); document.getElementById("verPanel").classList.remove("on");
+});
+document.getElementById("bVersions").addEventListener("click",e=>{
+  e.stopPropagation();
+  const p=document.getElementById("verPanel");
+  p.classList.toggle("on");
+  if(p.classList.contains("on")) renderVersions();
+});
+document.addEventListener("click",e=>{
+  const p=document.getElementById("verPanel");
+  if(!p.classList.contains("on")) return;
+  /* the click path is captured at dispatch, so a button that re-rendered itself
+     away mid-handler still counts as "inside the panel" */
+  const path = e.composedPath ? e.composedPath() : [];
+  if(path.indexOf(p)>=0 || p.contains(e.target) || e.target.id==="bVersions") return;
+  p.classList.remove("on");
+});
+
+/* =========================================================
+   5. Export
+   ========================================================= */
+/* Preview panes and other embedded frames block downloads a page starts itself.
+   The browser then tries to navigate to the blob URL instead, which wipes the app
+   out of the frame — so refuse politely rather than losing the student's screen. */
+const IN_FRAME = (()=>{ try{ return window.self !== window.top; }catch(e){ return true; } })();
+function dl(blob, filename){
+  if(IN_FRAME){
+    toast("Downloads are blocked in this preview. Open the page in its own browser tab first.");
+    return;
+  }
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=filename;
+  a.addEventListener("click", ev=>ev.stopPropagation());  /* don't let it dismiss open popovers */
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },800);
+}
+function stamp(){ const d=new Date(), p=n=>String(n).padStart(2,"0");
+  return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"_"+p(d.getHours())+p(d.getMinutes()); }
+/* Filenames stay ASCII: some browsers silently drop a download name that
+   contains non-ASCII characters and save the file as "download" instead.
+   The student's real name still appears inside every export. */
+const clean = s => String(s||"").replace(/[^A-Za-z0-9 _.-]+/g," ").replace(/\s+/g," ").trim();
+function baseName(tag){
+  return [clean(S.meta.name)||"student", clean(S.meta.title).slice(0,30)||"ontology",
+          tag?clean(tag).slice(0,24):null, stamp()].filter(Boolean).join("_");
+}
+const esc   = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const nl2br = s => esc(s).replace(/\n/g,"<br>");
+const TBL='border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;font-family:Calibri,sans-serif;font-size:10pt"';
+const TH ='style="background:#EDEFF2;text-align:left"';
+
+function ontTableHTML(){
+  let h='<table '+TBL+'><tr>'+S.types.map(t=>'<th '+TH+'>'+esc(t.name)+'</th>').join("")+'</tr>';
+  S.ont.forEach(r=>{ h+='<tr>'+S.types.map(t=>'<td valign="top">'+nl2br(r[t.id]||"")+'</td>').join("")+'</tr>'; });
+  return h+'</table>';
+}
+function conceptTableHTML(){
+  let h='<table '+TBL+'><tr><th '+TH+'>Type</th><th '+TH+'>Subtype</th><th '+TH+'>Concept</th>'+
+        '<th '+TH+'>Source</th><th '+TH+'>On board</th></tr>';
+  S.concepts.forEach(c=>{
+    const t=typeOf(c.type), sb=c.sub?subOf(c.sub):null;
+    h+='<tr><td>'+esc(t?t.name:"(uncategorized)")+'</td><td>'+esc(sb?sb.name:"")+'</td><td>'+
+       esc(c.label)+'</td><td>'+(c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td></tr>';
+  });
+  return h+'</table>';
+}
+function causalTableHTML(){
+  let h='<table '+TBL+'><tr><th '+TH+'>Depth</th><th '+TH+'>Statement</th></tr>';
+  S.causal.filter(r=>r.text.trim()).forEach(r=>{
+    h+='<tr><td>'+r.depth+'</td><td>'+esc("   ".repeat(r.depth)+(r.depth?"→ ":"")+r.text)+'</td></tr>';
+  });
+  return h+'</table>';
+}
+function linkTableHTML(){
+  let h='<table '+TBL+'><tr><th '+TH+'>From</th><th '+TH+'>To</th></tr>';
+  S.scene.links.forEach(l=>{
+    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
+    if(a&&b) h+='<tr><td>'+esc(nodeLabel(a))+'</td><td>'+esc(nodeLabel(b))+'</td></tr>';
+  });
+  return h+'</table>';
+}
+function notesHTML(){
+  const t=(S.notes||"").trim();
+  if(!t) return '<p style="font-family:Calibri,sans-serif;font-size:10pt;color:#888">(no notes)</p>';
+  return '<p style="font-family:Calibri,sans-serif;font-size:10pt;white-space:pre-wrap">'+nl2br(t)+'</p>';
+}
+function notesTableHTML(){
+  let h='<table '+TBL+'><tr><th '+TH+'>Notes</th></tr>';
+  (S.notes||"").split("\n").forEach(r=>{ h+='<tr><td>'+esc(r)+'</td></tr>'; });
+  return h+'</table>';
+}
+function wordBlob(tag){
+  const head='<html xmlns:o="urn:schemas-microsoft-com:office:office" '+
+    'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><title>Problem-solving ontology</title>'+
+    '<style>@page{size:A4 landscape;margin:1.6cm} body{font-family:Calibri,"Malgun Gothic",sans-serif}'+
+    'h1{font-size:16pt} h2{font-size:12pt;margin-top:18pt} th,td{font-size:10pt}</style></head><body>';
+  const body='<h1>Problem-solving Ontology</h1>'+
+    '<p><b>Student:</b> '+esc(S.meta.name||"-")+'<br>'+
+    '<b>Core problem:</b> '+esc(S.meta.title||"-")+'<br>'+
+    (tag?'<b>Version:</b> '+esc(tag)+'<br>':'')+
+    '<b>Exported:</b> '+new Date().toLocaleString("en-US")+'</p>'+
+    '<h2>1. Ontology editor</h2>'+ontTableHTML()+
+    '<h2>2. Causal view</h2>'+causalTableHTML()+
+    '<h2>3. Concept list</h2>'+conceptTableHTML()+
+    '<h2>4. Board connections</h2>'+linkTableHTML()+
+    '<h2>5. Notes</h2>'+notesHTML()+
+    '</body></html>';
+  return new Blob(["﻿"+head+body],{type:"application/msword"});
+}
+/* Everything goes on one sheet. Declaring extra worksheets only names the tabs —
+   Excel still imports all the content into the first one, leaving the rest blank. */
+function xlsHeading(text){
+  return '<table border="0" cellspacing="0" cellpadding="4">'+
+         '<tr><td style="font-family:Calibri,sans-serif;font-size:12pt;font-weight:bold">'+
+         esc(text)+'</td></tr></table>';
+}
+function excelBlob(){
+  const sections=[
+    ["1. Ontology editor",   ontTableHTML()],
+    ["2. Causal view",       causalTableHTML()],
+    ["3. Concept list",      conceptTableHTML()],
+    ["4. Board connections", linkTableHTML()],
+    ["5. Notes",             notesTableHTML()]
+  ];
+  const head='<table border="0" cellspacing="0" cellpadding="4" '+
+    'style="font-family:Calibri,sans-serif;font-size:10pt">'+
+    '<tr><td><b>Student</b></td><td>'+esc(S.meta.name||"-")+'</td></tr>'+
+    '<tr><td><b>Core problem</b></td><td>'+esc(S.meta.title||"-")+'</td></tr>'+
+    '<tr><td><b>Exported</b></td><td>'+esc(new Date().toLocaleString("en-US"))+'</td></tr></table><br>';
+  const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" '+
+    'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"></head><body>'+ head +
+    sections.map(sec=>xlsHeading(sec[0])+sec[1]+'<br>').join("")+
+    '</body></html>';
+  return new Blob(["\ufeff"+html],{type:"application/vnd.ms-excel"});
+}
+function pngExport(tag, done){
+  const scale=2, off=document.createElement("canvas");
+  off.width=CW*scale; off.height=CH*scale;
+  const g=off.getContext("2d"); g.setTransform(scale,0,0,scale,0,0);
+  const keep=selected; selected=null; render(g); selected=keep; render();
+  g.setTransform(scale,0,0,scale,0,0);
+  g.fillStyle="rgba(255,255,255,.9)"; g.fillRect(0,0,CW,26);
+  g.fillStyle="#71787f"; g.font="12px system-ui"; g.textBaseline="middle";
+  g.fillText([S.meta.name,S.meta.title,tag].filter(Boolean).join("  |  ")+
+             "   ·   "+new Date().toLocaleDateString("en-US"), 12, 13);
+  off.toBlob(b=>{ dl(b, baseName(tag)+"_board.png"); if(done) done(); }, "image/png");
+}
+document.getElementById("bWord").addEventListener("click",()=>{ dl(wordBlob(null), baseName()+".doc"); toast("Word file downloaded"); });
+document.getElementById("bExcel").addEventListener("click",()=>{ dl(excelBlob(), baseName()+".xls"); toast("Excel file downloaded"); });
+document.getElementById("bPng").addEventListener("click",()=>pngExport(null,()=>toast("PNG snapshot saved")));
+
+function exportVersion(v, kind){
+  const cur=grabSnap();
+  suspend=true; putSnap(v.snap);
+  const done=()=>{
+    putSnap(cur); suspend=false;
+    render(); renderRight(); applyNotes();
+    toast("Exported “"+v.label+"”");
+  };
+  if(kind==="png"){ pngExport(v.label, done); }
+  else { dl(wordBlob(v.label), baseName(v.label)+".doc"); done(); }
+}
+
+document.getElementById("bSave").addEventListener("click",()=>{
+  dirty=true; writeNow();
+  dl(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}), baseName()+".json");
+  toast("Backup file saved — keep it somewhere safe");
+});
+document.getElementById("bLoad").addEventListener("click",()=>document.getElementById("fileIn").click());
+document.getElementById("fileIn").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const d=JSON.parse(r.result);
+      if(!d.concepts) throw 0;
+      S=hydrate(d);
+      document.getElementById("mName").value=S.meta.name||"";
+      document.getElementById("mTitle").value=S.meta.title||"";
+      history.length=0; future.length=0; updUndo();
+      applyNotes(); render(); renderRight(); paintVersionCount(); renderVersions();
+      dirty=true; writeNow(); toast("Loaded");
+    }catch(err){ toast("Cannot read this file — only a Backup file from this app"); }
+  };
+  r.readAsText(f); e.target.value="";
+});
+document.getElementById("bReset").addEventListener("click",function(){
+  twoStep(this,"Erase everything?",()=>{
+    S=blankState();
+    document.getElementById("mName").value=""; document.getElementById("mTitle").value="";
+    history.length=0; future.length=0; updUndo();
+    applyNotes(); render(); renderRight(); paintVersionCount(); renderVersions();
+    dirty=true; writeNow(); toast("Reset");
+  });
+});
+
+/* =========================================================
+   6. Panel resize & boot
+   ========================================================= */
+(function(){
+  const grip=document.getElementById("grip"), right=document.getElementById("right");
+  let on=false;
+  grip.addEventListener("pointerdown",e=>{ on=true; grip.setPointerCapture(e.pointerId); });
+  grip.addEventListener("pointermove",e=>{
+    if(!on) return;
+    right.style.width=Math.min(760,Math.max(300, window.innerWidth-e.clientX))+"px";
+    resizeCanvas();
+  });
+  grip.addEventListener("pointerup",()=>{ on=false; });
+})();
+window.addEventListener("resize", resizeCanvas);
+
+if(!restore()) S=blankState();
+document.getElementById("mName").value=S.meta.name||"";
+document.getElementById("mTitle").value=S.meta.title||"";
+setTool(S.tool||"select");
+if(IN_FRAME){
+  const chip=document.getElementById("saveChip");
+  chip.className="bad";
+  chip.textContent="⚠ preview mode — open in a tab to export";
+  chip.title="This page is running inside a preview frame, which blocks file downloads.";
+  ["bPng","bWord","bExcel","bSave"].forEach(id=>{
+    const b=document.getElementById(id);
+    b.disabled=true; b.title="Open this page in its own browser tab to export files.";
+  });
+}
+applyNotes();
+renderRight();
+resizeCanvas();
+updUndo();
+paintVersionCount();
+paintSaveChip();
+</script>
+</body>
+</html>
