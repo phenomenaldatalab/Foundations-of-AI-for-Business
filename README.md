@@ -6,7 +6,7 @@
   for the weekly ontologizing sessions
 - **[Exercise instructions](EXERCISE.md)**
 
-**Open Concept Explorer:** https://phenomenaldatalab.github.io/Foundations-of-AI-for-Business/
+**Open Concept Explorer:** [https://phenomenaldatalab.github.io/Foundations-of-AI-for-Business/](https://phenomenaldatalab.github.io/Foundations-of-AI-for-Business/index.html?v=20260908-1)
 
 ## Course description
 
