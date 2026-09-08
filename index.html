@@ -87,6 +87,8 @@
        color:var(--muted);font-weight:600;border-radius:6px 6px 0 0;white-space:nowrap}
   .tab:hover{background:#f2f4f7;color:var(--text)}
   .tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+  /* Remove this class from a tab button when it is ready to be shown again. */
+  .tab.temporarily-hidden{display:none}
   .pane{flex:1;overflow:auto;padding:10px 12px 40px;display:none}
   .pane.on{display:block}
   .paneNote{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 10px;
@@ -103,6 +105,13 @@
         border-radius:6px;cursor:grab}
   .crow:hover{background:#f6f7f9;border-color:var(--line2)}
   .crow.used{background:#f0fbf4}
+  .crow.dragging{opacity:.4}
+  .crow.drop-before{box-shadow:inset 0 2px 0 var(--accent)}
+  .crow.drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
+  #rawList.drop-at-end::after{content:"Drop here";display:block;margin-top:4px;padding:8px;
+                              border:1px dashed var(--accent);border-radius:6px;
+                              color:var(--accent);text-align:center;font-size:11px}
+  .category-drop-target{outline:2px solid var(--accent);outline-offset:-2px;background:var(--accent-soft)!important}
   .crow .dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px}
   .crow .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .crow .lbl:focus{background:#fff;box-shadow:0 0 0 2px var(--accent-soft);border-radius:4px;white-space:normal}
@@ -222,7 +231,7 @@
     <div id="tools">
       <button class="tool on" data-tool="select">↖ Select</button>
       <button class="tool" data-tool="pen">✎ Draw</button>
-      <button class="tool" data-tool="link">↔ Link</button>
+      <button class="tool" data-tool="link">↔ Connect</button>
       <button class="tool" data-tool="text">T Text</button>
       <button class="tool" data-tool="erase">⌫ Erase</button>
       <span class="sep"></span>
@@ -262,15 +271,15 @@
     <div id="tabs">
       <button class="tab on" data-pane="raw">Raw</button>
       <button class="tab" data-pane="cat">Categories</button>
-      <button class="tab" data-pane="causal">Causal</button>
-      <button class="tab" data-pane="ont">Table</button>
+      <button class="tab temporarily-hidden" data-pane="causal">Causal</button>
+      <button class="tab temporarily-hidden" data-pane="ont">Table</button>
     </div>
 
     <div class="pane on" id="pane-raw">
       <p class="paneNote">Every concept you are working with. <b>Add</b> one below; hover a row for
-        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. <b>Double-click or drag</b> a concept to put it on the
-        board — green rows are already there. A node on the board <b>is</b> its concept: rename one and the
-        other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
+        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. Drag a concept <b>up or down to reorder it</b>, or drag
+        it to the board to place it there. Green rows are already on the board. A node on the board <b>is</b>
+        its concept: rename one and the other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
       <div class="addRow">
         <input id="newRaw" placeholder="New concept name">
         <select id="newRawCat"></select>
@@ -280,7 +289,8 @@
     </div>
 
     <div class="pane" id="pane-cat">
-      <p class="paneNote">Concept <b>types</b> come from the course framework, but you can edit them: click the
+      <p class="paneNote">Drag a concept onto a <b>type or subtype heading</b> to move it there, or drag it
+        above or below another concept to reorder it. Concept <b>types</b> can also be edited: click the
         <b>coloured dot</b> to change a colour, click the <b>name</b> to rename, <b>⊞</b> makes a subtype,
         <b>+</b> adds a concept, <b>✕</b> removes a type. A node on the board takes the colour of its type.</p>
       <div class="addRow">
@@ -346,6 +356,11 @@ const DEFAULT_TYPES = [
   {id:"outcome", name:"Outcomes",                  color:"#7950f2"},
   {id:"context", name:"Context",                   color:"#495057"}
 ];
+/* Keep the original framework in saved data, but temporarily leave it out of
+   the category UI. Newly created types are still shown normally. */
+const TEMPORARILY_HIDDEN_TYPE_IDS = new Set(DEFAULT_TYPES.map(t=>t.id));
+const isTemporarilyHiddenType = id => TEMPORARILY_HIDDEN_TYPE_IDS.has(id);
+const visibleTypes = () => (S.types||[]).filter(t=>!isTemporarilyHiddenType(t.id));
 /* Types live in state, so a student (or the instructor preparing the file) can
    rename them, recolour them, add their own, or drop the ones they never use.
    A node's colour is its type's colour — one source of truth, no second palette. */
@@ -368,9 +383,59 @@ const BASE_SUBS = [
   ["context","places"],
   ["context","technologies"]
 ];
-/* Raw ontology ships empty. When the instructor's list arrives, fill this with
-   ["<typeId>", "<subtype name or empty>", "<concept>"] triples. */
-const SAMPLE = [];
+/* Starter concepts appear in Raw as uncategorized items. Each source line is
+   kept as one concept, including any | and / notation in that line. */
+const SAMPLE = [
+  [null,"","AI paradigms"],
+  [null,"","reward hypothesis"],
+  [null,"","Arthur Samuel | Richard Sutton"],
+  [null,"","exploitation-exploration tradeoff"],
+  [null,"","microeconomics"],
+  [null,"","management hypothesis"],
+  [null,"","Marvin Minsky"],
+  [null,"","complex problems"],
+  [null,"","interdependence of actions"],
+  [null,"","sequence of actions"],
+  [null,"","combinatorial complexity / combinatorial explosion"],
+  [null,"","decomposition of problems / space of decompositions"],
+  [null,"","different levels of abstraction"],
+  [null,"","cost of feedback"],
+  [null,"","utility-maximizing individual | society/organization"],
+  [null,"","maximize rewards"],
+  [null,"","designer/architect / configuration of agents"],
+  [null,"","understanding problems"],
+  [null,"","theories of problems"],
+  [null,"","generate-and-test"],
+  [null,"","exploitation-exploration / increasing the probability of an action / exploration | interpretive"],
+  [null,"","processes"],
+  [null,"","belief | policy | value function"],
+  [null,"","repairing a decomposition"],
+  [null,"","learning | credit assignment"],
+  [null,"","learning to assign credit / constructing intermediate feedback"],
+  [null,"","superstitious learning"],
+  [null,"","reinforcement learning | learning-in-a-society /"],
+  [null,"","learning rate / belief updating | managerial/administrative actions / organization of actions"],
+  [null,"","temporal-difference learning / q-learning | delegating actions / coordinating/cooperating actions"],
+  [null,"","learning to coordinate and cooperate using a variety of evaluative criteria"],
+  [null,"","figuring out what to remember"],
+  [null,"","prediction machines"],
+  [null,"","feedback"],
+  [null,"","intermediate feedback | delayed feedback"],
+  [null,"","ambiguous feedback / sparse feedback"],
+  [null,"","statistical patterns / trial-and-error feedback | society-level “rewards”"],
+  [null,"","goals"],
+  [null,"","statistical predictions"],
+  [null,"","lower the costs of prediction"],
+  [null,"","efficient credit assignment"],
+  [null,"","effective credit assignment"],
+  [null,"","containment"],
+  [null,"","aggregate rewards/cumulative expected value"],
+  [null,"","net present value (NPV)"],
+  [null,"","T-maze"],
+  [null,"","shipbuilding company example"],
+  [null,"","app development team example"],
+  [null,"","budgeting committee example"]
+];
 
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
 const STORE_KEY = "concept-explorer-v2";
@@ -383,7 +448,7 @@ function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, 
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:2,
+    schema:3,
     meta:{name:"", title:""},
     types: DEFAULT_TYPES.map(t=>({...t})),
     subs: baseSubs(),
@@ -400,6 +465,7 @@ function blankState(){
 const typeOf = id => (S.types||[]).find(t=>t.id===id) || null;
 const subOf  = id => (S.subs||[]).find(x=>x.id===id) || null;
 function catLabel(c){
+  if(isTemporarilyHiddenType(c.type)) return "(uncategorized)";
   const sb=c.sub?subOf(c.sub):null; if(sb) return sb.name;
   const tp=typeOf(c.type);          if(tp) return tp.name;
   return "(uncategorized)";
@@ -414,7 +480,7 @@ function applyCatValue(c,v){
 function fillCatSelect(sel, current, opts){
   opts=opts||{}; sel.innerHTML="";
   if(opts.blank){ const o=document.createElement("option"); o.value=""; o.textContent="(uncategorized)"; sel.appendChild(o); }
-  S.types.forEach(t=>{
+  visibleTypes().forEach(t=>{
     const g=document.createElement("optgroup"); g.label=t.name;
     const o0=document.createElement("option"); o0.value=t.id; o0.textContent=t.name+" — general"; g.appendChild(o0);
     (S.subs||[]).filter(s=>s.type===t.id).forEach(s=>{
@@ -479,8 +545,23 @@ const OLD_MAP = {
   agg:"process::aggregation-strategies", init:"outcome::initial-states", goal:"outcome::goal-states"
 };
 const OLD_ONT_COL = { rep:"repr", sea:"process", int:"process", agg:"aggr", init:"outcome", goal:"outcome" };
+function addMissingSampleConcepts(d){
+  d.concepts=d.concepts||[];
+  const seen=new Set(d.concepts.map(c=>String(c.label||"").trim().toLowerCase()));
+  SAMPLE.forEach(([type,sub,label])=>{
+    const key=label.trim().toLowerCase();
+    if(seen.has(key)) return;
+    d.concepts.push({id:nid("c"), label, type, sub:sub?type+"::"+slug(sub):null, mine:false});
+    seen.add(key);
+  });
+  return d;
+}
 function migrate(d){
-  if(d.schema===2) return d;
+  if(d.schema===3) return d;
+  if(d.schema===2){
+    d.schema=3;
+    return addMissingSampleConcepts(d);
+  }
   const out=blankState();
   out.meta     = d.meta || out.meta;
   out.notes    = d.notes || "";
@@ -502,7 +583,7 @@ function migrate(d){
       return n;
     });
   }
-  return out;
+  return addMissingSampleConcepts(out);
 }
 /* Older boards stored a copy of the label on the node. Bind each of those to a
    real concept — matching by name, and creating the concept when it is missing —
@@ -954,16 +1035,87 @@ function iconBtn(txt,title,fn){
   b.addEventListener("click",e=>{ e.stopPropagation(); fn.call(b,e); });
   return b;
 }
+let conceptDraggingId=null;
+function clearConceptDropMarks(){
+  document.querySelectorAll(".crow.drop-before, .crow.drop-after").forEach(x=>{
+    x.classList.remove("drop-before","drop-after");
+  });
+  document.getElementById("rawList").classList.remove("drop-at-end");
+  document.querySelectorAll(".category-drop-target").forEach(x=>x.classList.remove("category-drop-target"));
+}
+function moveRawConcept(draggedId,targetId,after){
+  if(!draggedId || draggedId===targetId) return false;
+  const from=S.concepts.findIndex(c=>c.id===draggedId);
+  if(from<0) return false;
+  const moved=S.concepts.splice(from,1)[0];
+  let to=S.concepts.findIndex(c=>c.id===targetId);
+  if(to<0) to=S.concepts.length;
+  else if(after) to++;
+  S.concepts.splice(to,0,moved);
+  return true;
+}
+function autoScrollPane(pane,e){
+  const r=pane.getBoundingClientRect(), edge=56;
+  if(e.clientY<r.top+edge) pane.scrollTop-=Math.ceil((r.top+edge-e.clientY)/5);
+  else if(e.clientY>r.bottom-edge) pane.scrollTop+=Math.ceil((e.clientY-(r.bottom-edge))/5);
+}
+function makeCategoryDropTarget(el,type,sub){
+  el.title="Drop a concept here to move it into this category";
+  el.addEventListener("dragover",e=>{
+    if(!conceptDraggingId) return;
+    e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect="move";
+    autoScrollPane(document.getElementById("pane-cat"),e);
+    clearConceptDropMarks(); el.classList.add("category-drop-target");
+  });
+  el.addEventListener("dragleave",e=>{
+    if(!el.contains(e.relatedTarget)) el.classList.remove("category-drop-target");
+  });
+  el.addEventListener("drop",e=>{
+    if(!conceptDraggingId) return;
+    e.preventDefault(); e.stopPropagation();
+    const c=S.concepts.find(x=>x.id===conceptDraggingId);
+    if(c){ c.type=type||null; c.sub=sub||null; persist(); render(); renderRight(); }
+    conceptDraggingId=null; clearConceptDropMarks();
+  });
+}
 function conceptRow(c,opts){
   opts=opts||{};
   const li=document.createElement("li");
   li.className="crow"+(onBoard(c)?" used":"");
+  li.dataset.conceptId=c.id;
   li.draggable=true;
   li.addEventListener("dragstart", e=>{
     e.dataTransfer.setData("text/concept-id", c.id);
     e.dataTransfer.setData("text/plain", c.label);
-    e.dataTransfer.effectAllowed="copy";
+    e.dataTransfer.effectAllowed=(opts.reorderable||opts.categoryMovable)?"copyMove":"copy";
+    conceptDraggingId=c.id;
+    if(opts.reorderable||opts.categoryMovable) li.classList.add("dragging");
   });
+  li.addEventListener("dragend",()=>{
+    conceptDraggingId=null; li.classList.remove("dragging"); clearConceptDropMarks();
+  });
+  if(opts.reorderable||opts.categoryMovable){
+    li.addEventListener("dragover",e=>{
+      if(!conceptDraggingId || conceptDraggingId===c.id) return;
+      e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect="move";
+      if(opts.reorderable) autoScrollPane(document.getElementById("pane-raw"),e);
+      if(opts.categoryMovable) autoScrollPane(document.getElementById("pane-cat"),e);
+      clearConceptDropMarks();
+      const r=li.getBoundingClientRect();
+      li.classList.add(e.clientY>r.top+r.height/2?"drop-after":"drop-before");
+    });
+    li.addEventListener("drop",e=>{
+      if(!conceptDraggingId || conceptDraggingId===c.id) return;
+      e.preventDefault(); e.stopPropagation();
+      const r=li.getBoundingClientRect(), after=e.clientY>r.top+r.height/2;
+      const moved=S.concepts.find(x=>x.id===conceptDraggingId);
+      if(opts.categoryMovable && moved){ moved.type=c.type||null; moved.sub=c.sub||null; }
+      if(moveRawConcept(conceptDraggingId,c.id,after)){
+        persist(); opts.categoryMovable?renderRight():renderRaw();
+      }
+      conceptDraggingId=null; clearConceptDropMarks();
+    });
+  }
   li.addEventListener("dblclick", ()=>{
     if(lbl.isContentEditable) return;
     placeNode(c);
@@ -1034,8 +1186,26 @@ function renderRaw(){
     ul.innerHTML='<div class="empty">No concepts yet.<br>Add them above, or paste in the ontology your instructor gives you.</div>';
     return;
   }
-  list.forEach(c=>ul.appendChild(conceptRow(c)));
+  list.forEach(c=>ul.appendChild(conceptRow(c,{reorderable:true})));
 }
+
+const rawPane=document.getElementById("pane-raw"), rawList=document.getElementById("rawList");
+rawPane.addEventListener("dragover",e=>{
+  if(!conceptDraggingId) return;
+  e.preventDefault(); autoScrollPane(rawPane,e);
+  if(e.target.closest("#rawList .crow")) return;
+  const r=rawList.getBoundingClientRect();
+  if(e.clientY>=r.top){ clearConceptDropMarks(); rawList.classList.add("drop-at-end"); }
+});
+rawPane.addEventListener("drop",e=>{
+  if(!conceptDraggingId || e.target.closest("#rawList .crow")) return;
+  const r=rawList.getBoundingClientRect();
+  if(e.clientY<r.top) return;
+  e.preventDefault();
+  const from=S.concepts.findIndex(c=>c.id===conceptDraggingId);
+  if(from>=0){ S.concepts.push(S.concepts.splice(from,1)[0]); persist(); renderRaw(); }
+  conceptDraggingId=null; clearConceptDropMarks();
+});
 
 let pendingAdd=null, pendingSubType=null, pendingColor=null;
 function inlineAddBox(type, sub){
@@ -1066,7 +1236,7 @@ function renderCats(){
   const term=q();
   const match=c=>!term||c.label.toLowerCase().includes(term);
 
-  S.types.forEach(t=>{
+  visibleTypes().forEach(t=>{
     const mine=S.concepts.filter(c=>c.type===t.id && match(c));
     const blk=document.createElement("div");
     blk.className="typeBlock"+(S.closedTypes[t.id]?" closed":"");
@@ -1119,6 +1289,7 @@ function renderCats(){
       });
     });
     tdel.classList.add("del"); head.appendChild(tdel);
+    makeCategoryDropTarget(blk,t.id,null);
     blk.appendChild(head);
 
     const body=document.createElement("div"); body.className="typeBody";
@@ -1160,7 +1331,7 @@ function renderCats(){
     if(pendingAdd && pendingAdd.type===t.id && !pendingAdd.sub) body.appendChild(inlineAddBox(t.id,null));
     if(direct.length){
       const ul=document.createElement("ul"); ul.className="clist";
-      direct.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
+      direct.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true,categoryMovable:true})));
       body.appendChild(ul);
     }
 
@@ -1182,13 +1353,16 @@ function renderCats(){
         });
         dl.classList.add("del"); sh.appendChild(dl);
       }
-      body.appendChild(sh);
-      if(pendingAdd && pendingAdd.sub===sb.id) body.appendChild(inlineAddBox(t.id,sb.id));
+      const section=document.createElement("div"); section.className="subSection";
+      makeCategoryDropTarget(section,t.id,sb.id);
+      section.appendChild(sh);
+      if(pendingAdd && pendingAdd.sub===sb.id) section.appendChild(inlineAddBox(t.id,sb.id));
       if(items.length){
         const ul=document.createElement("ul"); ul.className="clist";
-        items.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
-        body.appendChild(ul);
+        items.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true,categoryMovable:true})));
+        section.appendChild(ul);
       }
+      body.appendChild(section);
     });
 
     if(!mine.length && pendingSubType!==t.id && !(pendingAdd && pendingAdd.type===t.id))
@@ -1197,16 +1371,18 @@ function renderCats(){
   });
 
   const un=S.concepts.filter(c=>!c.type && match(c));
+  const blk=document.createElement("div"); blk.className="typeBlock";
+  blk.innerHTML='<div class="typeHead"><span class="arrow">▼</span>'+
+    '<span style="width:9px;height:9px;border-radius:50%;background:#adb5bd"></span>'+
+    '<span class="name">Uncategorized</span><span class="cnt">'+un.length+'</span></div>';
+  makeCategoryDropTarget(blk,null,null);
+  const body=document.createElement("div"); body.className="typeBody";
   if(un.length){
-    const blk=document.createElement("div"); blk.className="typeBlock";
-    blk.innerHTML='<div class="typeHead"><span class="arrow">▼</span>'+
-      '<span style="width:9px;height:9px;border-radius:50%;background:#adb5bd"></span>'+
-      '<span class="name">Uncategorized</span><span class="cnt">'+un.length+'</span></div>';
-    const body=document.createElement("div"); body.className="typeBody";
     const ul=document.createElement("ul"); ul.className="clist";
-    un.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true})));
-    body.appendChild(ul); blk.appendChild(body); box.appendChild(blk);
-  }
+    un.forEach(c=>ul.appendChild(conceptRow(c,{hideCat:true,categoryMovable:true})));
+    body.appendChild(ul);
+  }else body.innerHTML='<div class="empty" style="padding:8px">Drop concepts here</div>';
+  blk.appendChild(body); box.appendChild(blk);
 }
 
 /* ---- causal outliner ---- */
@@ -1345,7 +1521,7 @@ function renderRight(){
   const keep2=seed.value; seed.innerHTML="";
   const opt=(v,t)=>{const o=document.createElement("option");o.value=v;o.textContent=t;seed.appendChild(o);};
   opt("__board__","On the board ("+S.scene.nodes.length+")");
-  S.types.forEach(t=>{
+  visibleTypes().forEach(t=>{
     const g=document.createElement("optgroup"); g.label=t.name;
     const n=S.concepts.filter(c=>c.type===t.id).length;
     const o=document.createElement("option"); o.value=t.id; o.textContent=t.name+" — all ("+n+")"; g.appendChild(o);
