@@ -105,6 +105,23 @@
         border-radius:6px;cursor:grab}
   .crow:hover{background:#f6f7f9;border-color:var(--line2)}
   .crow.used{background:#f0fbf4}
+  .star{border:none;background:transparent;cursor:pointer;padding:2px 3px;line-height:1;
+        font-size:13px;color:#c9ced6;flex:0 0 auto}
+  .star:hover{color:#f0a020}
+  .star.on{color:#f0a020}
+  .crow:not(:hover) .star:not(.on){visibility:hidden}
+  #favBlock{position:sticky;top:-10px;z-index:3;background:var(--panel);
+            margin:0 -12px;padding:10px 12px 0}
+  /* hidden until at least one concept is starred, so the list never shifts mid-drag */
+  #favBlock.empty{display:none}
+  #favBlock.fav-drop{outline:2px solid var(--accent);outline-offset:-2px;
+                     background:var(--accent-soft);border-radius:8px}
+  #favList{max-height:34vh;overflow:auto}
+  #favHead{display:flex;align-items:center;gap:8px;margin:0 0 5px;
+           font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+           text-transform:uppercase}
+  #favHead::after{content:"";flex:1;height:1px;background:var(--line2)}
+  #favDivider{height:1px;background:var(--line);margin:9px 0 10px}
   .crow.dragging{opacity:.4}
   .crow.drop-before{box-shadow:inset 0 2px 0 var(--accent)}
   .crow.drop-after{box-shadow:inset 0 -2px 0 var(--accent)}
@@ -233,7 +250,7 @@
       <button class="tool" data-tool="pen">✎ Draw</button>
       <button class="tool" data-tool="link">↔ Connect</button>
       <button class="tool" data-tool="text">T Text</button>
-      <button class="tool" data-tool="erase">⌫ Erase</button>
+      <button class="tool" data-tool="erase" title="Click a node, a pen stroke, an arrow or a text to remove it">⌫ Erase</button>
       <span class="sep"></span>
       <span id="inkGroup" title="Colour and thickness apply to Draw and Text">
         <span id="colors"></span>
@@ -277,13 +294,18 @@
 
     <div class="pane on" id="pane-raw">
       <p class="paneNote">Every concept you are working with. <b>Add</b> one below; hover a row for
-        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. Drag a concept <b>up or down to reorder it</b>, or drag
+        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. Click <b>☆</b> to mark a concept <b>most relevant</b> and keep it pinned at the top; once something is up there you can drag others in and out. Drag a concept <b>up or down to reorder it</b>, or drag
         it to the board to place it there. Green rows are already on the board. A node on the board <b>is</b>
         its concept: rename one and the other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
       <div class="addRow">
         <input id="newRaw" placeholder="New concept name">
         <select id="newRawCat"></select>
         <button class="btn primary" id="bAddRaw">Add</button>
+      </div>
+      <div id="favBlock" class="empty">
+        <div id="favHead"><span id="favCount"></span></div>
+        <ul class="clist" id="favList"></ul>
+        <div id="favDivider"></div>
       </div>
       <ul class="clist" id="rawList"></ul>
     </div>
@@ -654,7 +676,7 @@ const wrap=document.getElementById("canvasWrap");
 const cv=document.getElementById("board");
 const ctx=cv.getContext("2d");
 const editor=document.getElementById("nodeEditor");
-let DPR=1, CW=0, CH=0, selected=null, linkFrom=null, drag=null, drawing=null;
+let DPR=1, CW=0, CH=0, selected=null, linkFrom=null, drag=null, drawing=null, hoverLink=null;
 const history=[], future=[];
 
 function resizeCanvas(){
@@ -755,12 +777,14 @@ function render(target){
   S.scene.links.forEach(l=>{
     const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
     if(!a||!b) return;
-    g.strokeStyle="#adb5bd"; g.lineWidth=1.6;
+    const doomed = (hoverLink===l.id);
+    const linkCol = doomed ? "#d64545" : "#adb5bd";
+    g.strokeStyle=linkCol; g.lineWidth = doomed ? 3.2 : 1.6;
     g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke();
     const ang=Math.atan2(b.y-a.y,b.x-a.x), rb=nodeRect(b);
     const t=Math.min(Math.abs((rb.w/2)/Math.cos(ang))||999, Math.abs((rb.h/2)/Math.sin(ang))||999);
     const ex=b.x-Math.cos(ang)*t, ey=b.y-Math.sin(ang)*t;
-    g.fillStyle="#adb5bd"; g.beginPath(); g.moveTo(ex,ey);
+    g.fillStyle=linkCol; g.beginPath(); g.moveTo(ex,ey);
     g.lineTo(ex-Math.cos(ang-.4)*9, ey-Math.sin(ang-.4)*9);
     g.lineTo(ex-Math.cos(ang+.4)*9, ey-Math.sin(ang+.4)*9);
     g.closePath(); g.fill();
@@ -818,8 +842,16 @@ cv.addEventListener("pointerdown", e=>{
   cv.setPointerCapture(e.pointerId);
   const p=pos(e), h=hit(p.x,p.y), tool=S.tool;
   if(tool==="pen"){ snapshot(); drawing={color:S.color,size:S.size,pts:[p]}; S.scene.strokes.push(drawing); return; }
-  if(tool==="erase"){ snapshot(); if(h) removeItem(h); else eraseStrokeNear(p);
-                      render(); persist(); renderRight(); return; }
+  if(tool==="erase"){
+    const si = h ? -1 : strokeIndexNear(p);      /* stacking order: node/text, pen stroke, arrow */
+    const link = (h || si>=0) ? null : linkNear(p);
+    if(!h && si<0 && !link) return;              /* nothing here — leave undo history alone */
+    snapshot();
+    if(h) removeItem(h);
+    else if(si>=0) S.scene.strokes.splice(si,1);
+    else { S.scene.links=S.scene.links.filter(x=>x.id!==link.id); toast("Arrow removed"); }
+    hoverLink=null; render(); persist(); renderRight(); return;
+  }
   if(tool==="text"){
     snapshot();
     const t={id:nid("t"),x:p.x,y:p.y,text:"Text",color:S.color,size:S.size};
@@ -840,6 +872,11 @@ cv.addEventListener("pointerdown", e=>{
 });
 cv.addEventListener("pointermove", e=>{
   const p=pos(e);
+  if(S.tool==="erase" && !drawing && !drag){
+    const l = hit(p.x,p.y) ? null : linkNear(p);
+    const id = l ? l.id : null;
+    if(id!==hoverLink){ hoverLink=id; render(); }
+  } else if(hoverLink){ hoverLink=null; render(); }
   if(drawing){
     const last=drawing.pts[drawing.pts.length-1];
     if(Math.hypot(p.x-last.x,p.y-last.y) < 1.4) return;   /* thin the stroke: smaller saves */
@@ -854,13 +891,34 @@ cv.addEventListener("pointermove", e=>{
 });
 function endPointer(){ if(drawing){ drawing=null; persist(); } if(drag){ drag=null; persist(); } }
 cv.addEventListener("pointerup", endPointer);
+cv.addEventListener("pointerleave", ()=>{ if(hoverLink){ hoverLink=null; render(); } });
 cv.addEventListener("pointercancel", endPointer);
 cv.addEventListener("dblclick", e=>{ const p=pos(e), h=hit(p.x,p.y); if(h) openEditor(h.obj,h.kind); });
 
-function eraseStrokeNear(p){
+const ERASE_R=12;          /* how close a click has to be to a pen stroke */
+const LINK_HIT=14;         /* arrows are one pixel wide, so aim a little wider */
+function strokeIndexNear(p){
   for(let i=S.scene.strokes.length-1;i>=0;i--){
-    if(S.scene.strokes[i].pts.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<12)){ S.scene.strokes.splice(i,1); return; }
+    if(S.scene.strokes[i].pts.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<ERASE_R)) return i;
   }
+  return -1;
+}
+function distToSegment(p,a,b){
+  const dx=b.x-a.x, dy=b.y-a.y, len2=dx*dx+dy*dy;
+  if(!len2) return Math.hypot(p.x-a.x, p.y-a.y);
+  let t=((p.x-a.x)*dx+(p.y-a.y)*dy)/len2;
+  t=Math.max(0,Math.min(1,t));
+  return Math.hypot(p.x-(a.x+t*dx), p.y-(a.y+t*dy));
+}
+function linkNear(p){
+  let best=null, bestD=LINK_HIT;
+  S.scene.links.forEach(l=>{
+    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
+    if(!a||!b) return;
+    const d=distToSegment(p,a,b);
+    if(d<=bestD){ bestD=d; best=l; }
+  });
+  return best;
 }
 function removeItem(h){
   if(h.kind==="node"){
@@ -961,7 +1019,7 @@ wrap.addEventListener("drop", e=>{
 });
 
 function setTool(name){
-  S.tool=name; linkFrom=null;
+  S.tool=name; linkFrom=null; hoverLink=null;
   document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("on", x.dataset.tool===name));
   cv.style.cursor = name==="pen"?"crosshair": name==="text"?"text": name==="erase"?"cell":"default";
   paintInk(); render(); persist();
@@ -1042,6 +1100,7 @@ function clearConceptDropMarks(){
   });
   document.getElementById("rawList").classList.remove("drop-at-end");
   document.querySelectorAll(".category-drop-target").forEach(x=>x.classList.remove("category-drop-target"));
+  const fb=document.getElementById("favBlock"); if(fb) fb.classList.remove("fav-drop");
 }
 function moveRawConcept(draggedId,targetId,after){
   if(!draggedId || draggedId===targetId) return false;
@@ -1110,6 +1169,7 @@ function conceptRow(c,opts){
       const r=li.getBoundingClientRect(), after=e.clientY>r.top+r.height/2;
       const moved=S.concepts.find(x=>x.id===conceptDraggingId);
       if(opts.categoryMovable && moved){ moved.type=c.type||null; moved.sub=c.sub||null; }
+      if(moved && opts.favZone!==undefined) moved.fav = opts.favZone;   /* dropped above or below the line */
       if(moveRawConcept(conceptDraggingId,c.id,after)){
         persist(); opts.categoryMovable?renderRight():renderRaw();
       }
@@ -1121,6 +1181,18 @@ function conceptRow(c,opts){
     placeNode(c);
   });
 
+  if(opts.showStar){
+    const st=document.createElement("button");
+    st.className="star"+(c.fav?" on":"");
+    st.textContent = c.fav ? "★" : "☆";
+    st.title = c.fav ? "Remove from most relevant" : "Mark as most relevant";
+    st.addEventListener("click",e=>{
+      e.stopPropagation();
+      c.fav = !c.fav;
+      persist(); renderRaw();
+    });
+    li.appendChild(st);
+  }
   const dot=document.createElement("span");
   dot.className="dot"; dot.style.background=catColor(c); li.appendChild(dot);
 
@@ -1180,30 +1252,73 @@ function conceptRow(c,opts){
 
 function renderRaw(){
   const ul=document.getElementById("rawList"); ul.innerHTML="";
+  const favUl=document.getElementById("favList"); favUl.innerHTML="";
+  const block=document.getElementById("favBlock");
   const term=q();
   const list=S.concepts.filter(c=>!term||c.label.toLowerCase().includes(term));
+
+  /* starred concepts stay pinned above the divider while the rest scrolls */
+  const favs=list.filter(c=>c.fav), rest=list.filter(c=>!c.fav);
+  block.classList.toggle("empty", favs.length===0);
+  document.getElementById("favCount").textContent =
+    favs.length ? "Most relevant (" + favs.length + ")" : "";
+  favs.forEach(c=>favUl.appendChild(conceptRow(c,{reorderable:true, showStar:true, favZone:true})));
+
   if(!list.length){
     ul.innerHTML='<div class="empty">No concepts yet.<br>Add them above, or paste in the ontology your instructor gives you.</div>';
     return;
   }
-  list.forEach(c=>ul.appendChild(conceptRow(c,{reorderable:true})));
+  if(!rest.length && favs.length){
+    ul.innerHTML = term
+      ? '<div class="empty">No other matches — the ones above are pinned.</div>'
+      : '<div class="empty">Every concept is pinned above.</div>';
+    return;
+  }
+  rest.forEach(c=>ul.appendChild(conceptRow(c,{reorderable:true, showStar:true, favZone:false})));
 }
 
 const rawPane=document.getElementById("pane-raw"), rawList=document.getElementById("rawList");
+(function(){
+  const block=document.getElementById("favBlock");
+  block.addEventListener("dragover",e=>{
+    if(!conceptDraggingId) return;
+    if(e.target.closest("#favList .crow")) return;   /* a row handles its own reorder */
+    e.preventDefault(); e.stopPropagation();
+    e.dataTransfer.dropEffect="move";
+    clearConceptDropMarks(); block.classList.add("fav-drop");
+  });
+  block.addEventListener("dragleave",e=>{
+    if(!block.contains(e.relatedTarget)) block.classList.remove("fav-drop");
+  });
+  block.addEventListener("drop",e=>{
+    if(!conceptDraggingId) return;
+    if(e.target.closest("#favList .crow")) return;
+    e.preventDefault(); e.stopPropagation();
+    const moved=S.concepts.find(x=>x.id===conceptDraggingId);
+    if(moved && !moved.fav){ moved.fav=true; persist(); }
+    block.classList.remove("fav-drop");
+    conceptDraggingId=null; clearConceptDropMarks(); renderRaw();
+  });
+})();
 rawPane.addEventListener("dragover",e=>{
   if(!conceptDraggingId) return;
   e.preventDefault(); autoScrollPane(rawPane,e);
+  if(e.target.closest("#favBlock")) return;
   if(e.target.closest("#rawList .crow")) return;
   const r=rawList.getBoundingClientRect();
   if(e.clientY>=r.top){ clearConceptDropMarks(); rawList.classList.add("drop-at-end"); }
 });
 rawPane.addEventListener("drop",e=>{
-  if(!conceptDraggingId || e.target.closest("#rawList .crow")) return;
+  if(!conceptDraggingId || e.target.closest("#rawList .crow") || e.target.closest("#favBlock")) return;
   const r=rawList.getBoundingClientRect();
   if(e.clientY<r.top) return;
   e.preventDefault();
   const from=S.concepts.findIndex(c=>c.id===conceptDraggingId);
-  if(from>=0){ S.concepts.push(S.concepts.splice(from,1)[0]); persist(); renderRaw(); }
+  if(from>=0){
+    const moved=S.concepts.splice(from,1)[0];
+    moved.fav=false;                       /* dropped below the line */
+    S.concepts.push(moved); persist(); renderRaw();
+  }
   conceptDraggingId=null; clearConceptDropMarks();
 });
 
