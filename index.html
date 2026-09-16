@@ -82,6 +82,11 @@
   #rHead{padding:10px 12px 0}
   #search{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 10px;outline:none}
   #search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  #datasetRow{display:flex;align-items:center;gap:8px;padding:10px 12px 0}
+  #datasetRow label{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+  #sessionSelect{flex:1;border:1px solid var(--line);background:#f8f9fb;color:var(--text);
+                 padding:8px 10px;border-radius:7px;font-weight:700;outline:none}
+  #sessionSelect:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   #tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--line)}
   .tab{border:none;background:transparent;padding:8px 10px;border-bottom:2px solid transparent;
        color:var(--muted);font-weight:600;border-radius:6px 6px 0 0;white-space:nowrap}
@@ -285,6 +290,13 @@
 
   <div id="right">
     <div id="rHead"><input id="search" placeholder="Search concepts…"></div>
+    <div id="datasetRow">
+      <label for="sessionSelect">Dataset</label>
+      <select id="sessionSelect" aria-label="Choose a concept dataset">
+        <option value="session1">Session 1</option>
+        <option value="session2">Session 2</option>
+      </select>
+    </div>
     <div id="tabs">
       <button class="tab on" data-pane="raw">Raw</button>
       <button class="tab" data-pane="cat">Categories</button>
@@ -378,11 +390,18 @@ const DEFAULT_TYPES = [
   {id:"outcome", name:"Outcomes",                  color:"#7950f2"},
   {id:"context", name:"Context",                   color:"#495057"}
 ];
+const SESSION_INFO = [
+  {id:"session1", name:"Session 1"},
+  {id:"session2", name:"Session 2"}
+];
+const sessionOf = item => (item && item.session) || "session1";
 /* Keep the original framework in saved data, but temporarily leave it out of
    the category UI. Newly created types are still shown normally. */
 const TEMPORARILY_HIDDEN_TYPE_IDS = new Set(DEFAULT_TYPES.map(t=>t.id));
 const isTemporarilyHiddenType = id => TEMPORARILY_HIDDEN_TYPE_IDS.has(id);
-const visibleTypes = () => (S.types||[]).filter(t=>!isTemporarilyHiddenType(t.id));
+const typesForSession = id => (S.types||[]).filter(t=>sessionOf(t)===(id||S.activeSession||"session1"));
+const activeConcepts = () => (S.concepts||[]).filter(c=>sessionOf(c)===(S.activeSession||"session1"));
+const visibleTypes = id => typesForSession(id).filter(t=>!isTemporarilyHiddenType(t.id));
 /* Types live in state, so a student (or the instructor preparing the file) can
    rename them, recolour them, add their own, or drop the ones they never use.
    A node's colour is its type's colour — one source of truth, no second palette. */
@@ -459,8 +478,64 @@ const SAMPLE = [
   [null,"","budgeting committee example"]
 ];
 
+/* Session 2 starts with the instructor-provided categories and concepts.
+   Repeated source lines are intentionally preserved as separate concepts. */
+const SESSION2_GROUPS = [
+  ["s2_task_environment", "task environment", [
+    "complexity", "quantifiable units of feedback", "problem-solving environments",
+    "circuit network", "complexity", "probability of a message", "modules", "tasks",
+    "subtasks", "IID problems", "OOD problems",
+    "dynamics of processing information in novel problems", "statist. distrib. of messages"
+  ]],
+  ["s2_data", "data", [
+    "Information", "Shannon information", "Gibson information", "data", "sense perceptions",
+    "knowledge", "bits", "patterns of symbols", "lists", "symbols", "semantic content",
+    "syntactic structure", "bit strings", "noise", "signals", "semantic structure",
+    "numerical data", "semantic categories", "summary data", "semantic information",
+    "linked lists", "meaningful abstractions", "levels of abstraction",
+    "statistical redundancies", "information more complex than lists", "data types"
+  ]],
+  ["s2_problem_solving_processes", "problem-solving processes", [
+    "evaluating information in patterns of symbols", "pattern matching", "pattern recognition",
+    "communication", "abstraction", "messages", "message passing", "information processing",
+    "symbol manipulation", "bit string processing", "list processing", "encoding and decoding",
+    "brute force", "decision-making in orgs.", "increasing channel capacity",
+    "abstracting a problem", "designation"
+  ]],
+  ["s2_cognitive_assumptions", "cognitive assumptions", [
+    "agents", "energy/work", "processing power", "processing capacity", "brute force",
+    "channel capacity", "limits to bit string processing capacity", "limits to channel capacity",
+    "bandwidth", "languages"
+  ]],
+  ["s2_organizational_structure", "organizational structure", [
+    "organizational structure", "physical channels", "hierarchical organization",
+    "non-hierarchical organization", "shared languages"
+  ]],
+  ["s2_outcomes", "outcomes", [
+    "compressed information", "uncertainty reduced", "entropy", "signal-to-noise ratio"
+  ]],
+  ["s2_settings", "settings", [
+    "Theseus", "budgeting bureau in a city government", "fair coin example"
+  ]],
+  ["s2_theories_people_places", "theories/people/places", [
+    "information theory", "Architecture of Complexity", "Eleanor Gibson", "Herbert Simon",
+    "Claude Shannon", "the bitter lesson (Sutton)", "information bandwagon",
+    "watchmaker parable", "phys. symbol systems hypo."
+  ]]
+];
+function session2Concepts(){
+  let i=0;
+  return SESSION2_GROUPS.flatMap(g=>g[2].map(label=>({
+    id:"s2c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+    mine:false, session:"session2"
+  })));
+}
+
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
 const STORE_KEY = "concept-explorer-v2";
+/* Keep one untouched copy of pre-dataset browser data. This uses a different
+   key, so the schema upgrade can never be the only remaining copy. */
+const PRE_DATASET_BACKUP_KEY = STORE_KEY+"-before-session-datasets";
 
 let S = null, uid = 1;
 const nid = p => (p||"i") + "_" + Date.now().toString(36) + "_" + (uid++);
@@ -470,12 +545,14 @@ function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, 
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:3,
+    schema:5,
+    activeSession:"session1",
     meta:{name:"", title:""},
-    types: DEFAULT_TYPES.map(t=>({...t})),
+    types: DEFAULT_TYPES.map(t=>({...t,session:"session1"})),
     subs: baseSubs(),
     concepts: SAMPLE.map(([type,sub,label])=>({
-      id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null, mine:false })),
+      id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null,
+      mine:false, session:"session1" })).concat(session2Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
     scene:{strokes:[], nodes:[], texts:[], links:[]},
@@ -502,7 +579,7 @@ function applyCatValue(c,v){
 function fillCatSelect(sel, current, opts){
   opts=opts||{}; sel.innerHTML="";
   if(opts.blank){ const o=document.createElement("option"); o.value=""; o.textContent="(uncategorized)"; sel.appendChild(o); }
-  visibleTypes().forEach(t=>{
+  visibleTypes(opts.session).forEach(t=>{
     const g=document.createElement("optgroup"); g.label=t.name;
     const o0=document.createElement("option"); o0.value=t.id; o0.textContent=t.name+" — general"; g.appendChild(o0);
     (S.subs||[]).filter(s=>s.type===t.id).forEach(s=>{
@@ -569,20 +646,58 @@ const OLD_MAP = {
 const OLD_ONT_COL = { rep:"repr", sea:"process", int:"process", agg:"aggr", init:"outcome", goal:"outcome" };
 function addMissingSampleConcepts(d){
   d.concepts=d.concepts||[];
-  const seen=new Set(d.concepts.map(c=>String(c.label||"").trim().toLowerCase()));
+  const seen=new Set(d.concepts.filter(c=>sessionOf(c)==="session1")
+    .map(c=>String(c.label||"").trim().toLowerCase()));
   SAMPLE.forEach(([type,sub,label])=>{
     const key=label.trim().toLowerCase();
     if(seen.has(key)) return;
-    d.concepts.push({id:nid("c"), label, type, sub:sub?type+"::"+slug(sub):null, mine:false});
+    d.concepts.push({id:nid("c"), label, type, sub:sub?type+"::"+slug(sub):null,
+                     mine:false, session:"session1"});
     seen.add(key);
   });
   return d;
 }
+function addSession2Seed(d){
+  d.types=d.types||[]; d.concepts=d.concepts||[];
+  session2Concepts().forEach(c=>{ if(!d.concepts.some(x=>x.id===c.id)) d.concepts.push(c); });
+  return d;
+}
+function removeDefaultSession2Categories(d){
+  d.types=d.types||[]; d.concepts=d.concepts||[];
+  let i=0;
+  SESSION2_GROUPS.forEach(g=>g[2].forEach(()=>{
+    const id="s2c_"+String(++i).padStart(3,"0");
+    const c=d.concepts.find(x=>x.id===id);
+    /* Clear only the original automatic assignment. Any category the user chose
+       themselves has a different id and is preserved. */
+    if(c && c.type===g[0]){ c.type=null; c.sub=null; }
+  }));
+  const seededIds=new Set(SESSION2_GROUPS.map(g=>g[0]));
+  d.types=d.types.filter(t=>!seededIds.has(t.id) || d.concepts.some(c=>c.type===t.id));
+  return d;
+}
+function markLegacyAsSession1(d){
+  (d.types||[]).forEach(t=>{ if(!t.session) t.session="session1"; });
+  (d.concepts||[]).forEach(c=>{ if(!c.session) c.session="session1"; });
+  d.activeSession = SESSION_INFO.some(x=>x.id===d.activeSession) ? d.activeSession : "session1";
+  return d;
+}
 function migrate(d){
-  if(d.schema===3) return d;
+  if(d.schema===5) return markLegacyAsSession1(d);
+  if(d.schema===4){
+    markLegacyAsSession1(d);
+    removeDefaultSession2Categories(d);
+    d.schema=5;
+    return addSession2Seed(d);
+  }
+  if(d.schema===3){
+    d.schema=5;
+    markLegacyAsSession1(d);
+    return addSession2Seed(d);
+  }
   if(d.schema===2){
     d.schema=3;
-    return addMissingSampleConcepts(d);
+    return migrate(addMissingSampleConcepts(d));
   }
   const out=blankState();
   out.meta     = d.meta || out.meta;
@@ -592,7 +707,8 @@ function migrate(d){
   out.causal   = (d.causal && d.causal.length) ? d.causal : out.causal;
   out.scene    = d.scene || out.scene;
   out.concepts = (d.concepts||[]).map(c=>{
-    const o={id:c.id||nid("c"), label:c.label, type:null, sub:null, mine:!!c.mine};
+    const o={id:c.id||nid("c"), label:c.label, type:null, sub:null, mine:!!c.mine,
+             session:"session1"};
     const v=OLD_MAP[c.cat]; if(v) applyCatValue(o,v);
     return o;
   });
@@ -605,7 +721,7 @@ function migrate(d){
       return n;
     });
   }
-  return addMissingSampleConcepts(out);
+  return addSession2Seed(addMissingSampleConcepts(out));
 }
 /* Older boards stored a copy of the label on the node. Bind each of those to a
    real concept — matching by name, and creating the concept when it is missing —
@@ -619,7 +735,8 @@ function bindNodes(d){
     const key=String(n.label||"").trim().toLowerCase();
     let c=byName[key];
     if(!c){
-      c={id:nid("c"), label:n.label||"Concept", type:n.type||null, sub:null, mine:true};
+      c={id:nid("c"), label:n.label||"Concept", type:n.type||null, sub:null, mine:true,
+         session:d.activeSession||"session1"};
       d.concepts.push(c); byName[key]=c;
     }
     n.cid=c.id; delete n.label; delete n.type;
@@ -628,7 +745,8 @@ function bindNodes(d){
 }
 function hydrate(d){
   d=migrate(d);
-  d.types = (d.types && d.types.length) ? d.types : DEFAULT_TYPES.map(t=>({...t}));
+  d.types = (d.types && d.types.length) ? d.types :
+    DEFAULT_TYPES.map(t=>({...t,session:"session1"}));
   d.subs = (d.subs && d.subs.length) ? d.subs : baseSubs();
   d.versions = d.versions || [];
   d.closedTypes = d.closedTypes || {};
@@ -639,7 +757,9 @@ function hydrate(d){
   bindNodes(d);
   (d.versions||[]).forEach(v=>{
     if(!v.snap) return;
-    if(!v.snap.types || !v.snap.types.length) v.snap.types=DEFAULT_TYPES.map(t=>({...t}));
+    if(!v.snap.types || !v.snap.types.length)
+      v.snap.types=DEFAULT_TYPES.map(t=>({...t,session:"session1"}));
+    markLegacyAsSession1(v.snap);
     bindNodes(v.snap);
   });
   return d;
@@ -650,7 +770,13 @@ function restore(){
     if(!raw) return false;
     const d=JSON.parse(raw);
     if(!d || !d.concepts) return false;
-    S=hydrate(d); return true;
+    if((Number(d.schema)||0)<5 && !localStorage.getItem(PRE_DATASET_BACKUP_KEY)){
+      try{ localStorage.setItem(PRE_DATASET_BACKUP_KEY, raw); }
+      catch(e){ /* If storage is full, STORE_KEY itself still holds the untouched original. */ }
+    }
+    const next=hydrate(d);
+    if(!next || !Array.isArray(next.concepts) || !Array.isArray(next.types)) return false;
+    S=next; return true;
   }catch(e){ return false; }
 }
 
@@ -1004,7 +1130,8 @@ function placeNode(concept, x, y){
 /* Sketching a brand-new concept on the board adds it to the concept list too,
    so nothing a student thinks of on the canvas escapes the ontology. */
 function addConceptNode(label, x, y){
-  const c={id:nid("c"), label:label||"New concept", type:null, sub:null, mine:true};
+  const c={id:nid("c"), label:label||"New concept", type:null, sub:null, mine:true,
+           session:S.activeSession||"session1"};
   S.concepts.push(c);
   return placeNode(c, x, y);
 }
@@ -1038,7 +1165,7 @@ function paintNodeType(){
   hints.style.display = c ? "none" : "";
   if(!c) return;
   document.getElementById("nodeTypeName").textContent = c.label;
-  fillCatSelect(sel, catValue(c), {blank:true});
+  fillCatSelect(sel, catValue(c), {blank:true,session:sessionOf(c)});
   sel.onchange = ()=>{ applyCatValue(c, sel.value); persist(); render(); renderRight(); };
 }
 function paintInk(){
@@ -1220,7 +1347,7 @@ function conceptRow(c,opts){
     const cat=document.createElement("span");
     cat.className="cat"; cat.textContent=catLabel(c); li.appendChild(cat);
   }
-  if(c.mine && S.concepts.some(x=>!x.mine)){
+  if(c.mine && activeConcepts().some(x=>!x.mine)){
     const t=document.createElement("span"); t.className="tag-mine"; t.textContent="added by me";
     li.appendChild(t);
   }
@@ -1231,7 +1358,7 @@ function conceptRow(c,opts){
   acts.appendChild(iconBtn("⇄","Recategorize",()=>{
     if(li.querySelector(".miniSel")) return;
     const s=document.createElement("select"); s.className="miniSel";
-    fillCatSelect(s, catValue(c), {blank:true});
+    fillCatSelect(s, catValue(c), {blank:true,session:sessionOf(c)});
     s.addEventListener("change",()=>{ applyCatValue(c,s.value); persist(); renderRight(); });
     s.addEventListener("blur",()=>renderRight());
     li.insertBefore(s,acts); s.focus();
@@ -1255,7 +1382,7 @@ function renderRaw(){
   const favUl=document.getElementById("favList"); favUl.innerHTML="";
   const block=document.getElementById("favBlock");
   const term=q();
-  const list=S.concepts.filter(c=>!term||c.label.toLowerCase().includes(term));
+  const list=activeConcepts().filter(c=>!term||c.label.toLowerCase().includes(term));
 
   /* starred concepts stay pinned above the divider while the rest scrolls */
   const favs=list.filter(c=>c.fav), rest=list.filter(c=>!c.fav);
@@ -1330,7 +1457,8 @@ function inlineAddBox(type, sub){
   const ok=document.createElement("button"); ok.className="btn primary"; ok.textContent="Add";
   const commit=()=>{
     const v=i.value.trim();
-    if(v){ S.concepts.push({id:nid("c"),label:v,type:type,sub:sub||null,mine:true}); i.value=""; }
+    if(v){ S.concepts.push({id:nid("c"),label:v,type:type,sub:sub||null,mine:true,
+                            session:S.activeSession||"session1"}); i.value=""; }
     persist(); renderRight();
     const again=document.querySelector(".inlineAdd input"); if(again) again.focus();
   };
@@ -1352,7 +1480,7 @@ function renderCats(){
   const match=c=>!term||c.label.toLowerCase().includes(term);
 
   visibleTypes().forEach(t=>{
-    const mine=S.concepts.filter(c=>c.type===t.id && match(c));
+    const mine=activeConcepts().filter(c=>c.type===t.id && match(c));
     const blk=document.createElement("div");
     blk.className="typeBlock"+(S.closedTypes[t.id]?" closed":"");
 
@@ -1485,7 +1613,7 @@ function renderCats(){
     blk.appendChild(body); box.appendChild(blk);
   });
 
-  const un=S.concepts.filter(c=>!c.type && match(c));
+  const un=activeConcepts().filter(c=>!c.type && match(c));
   const blk=document.createElement("div"); blk.className="typeBlock";
   blk.innerHTML='<div class="typeHead"><span class="arrow">▼</span>'+
     '<span style="width:9px;height:9px;border-radius:50%;background:#adb5bd"></span>'+
@@ -1523,7 +1651,7 @@ function renderCausal(){
     acts.appendChild(iconBtn("⇤","Outdent (Shift+Tab)",()=>setDepth(idx,row.depth-1)));
     acts.appendChild(iconBtn("+","Add to the board as a concept",()=>{
       const t=row.text.trim(); if(!t) return;
-      const hit=S.concepts.find(c=>c.label.toLowerCase()===t.toLowerCase());
+      const hit=activeConcepts().find(c=>c.label.toLowerCase()===t.toLowerCase());
       hit ? placeNode(hit) : addConceptNode(t);
     }));
     const del=iconBtn("✕","Delete line",()=>{
@@ -1570,9 +1698,9 @@ document.getElementById("bCausalSeed").addEventListener("click",()=>{
   const v=document.getElementById("seedCat").value;
   let pool;
   if(v==="__board__")        pool=S.scene.nodes.map(nodeLabel);
-  else if(v==="__all__")     pool=S.concepts.map(c=>c.label);
-  else if(v.indexOf("::")>0) pool=S.concepts.filter(c=>c.sub===v).map(c=>c.label);
-  else                       pool=S.concepts.filter(c=>c.type===v).map(c=>c.label);
+  else if(v==="__all__")     pool=activeConcepts().map(c=>c.label);
+  else if(v.indexOf("::")>0) pool=activeConcepts().filter(c=>c.sub===v).map(c=>c.label);
+  else                       pool=activeConcepts().filter(c=>c.type===v).map(c=>c.label);
   if(!pool.length){ toast("Nothing to pull in"); return; }
   while(S.causal.length && !S.causal[S.causal.length-1].text.trim()) S.causal.pop();
   pool.forEach(t=>S.causal.push({id:nid("r"),depth:0,text:t}));
@@ -1586,9 +1714,10 @@ document.getElementById("bCausalClear").addEventListener("click",function(){
 /* ---- ontology table: one column per concept type ---- */
 function renderOnt(){
   const box=document.getElementById("ontWrap");
+  const tableTypes=visibleTypes();
   const tb=document.createElement("table"); tb.className="ont";
   const thead=document.createElement("thead"), tr=document.createElement("tr");
-  S.types.forEach(t=>{
+  tableTypes.forEach(t=>{
     const th=document.createElement("th"); th.textContent=t.name;
     th.style.borderTop="3px solid "+t.color; tr.appendChild(th);
   });
@@ -1598,7 +1727,7 @@ function renderOnt(){
   const tbody=document.createElement("tbody");
   S.ont.forEach((row,ri)=>{
     const r=document.createElement("tr");
-    S.types.forEach(t=>{
+    tableTypes.forEach(t=>{
       const td=document.createElement("td");
       const ta=document.createElement("textarea");
       ta.value=row[t.id]||"";
@@ -1626,6 +1755,9 @@ function renderOnt(){
 document.getElementById("bAddOntRow").addEventListener("click",()=>{ S.ont.push(blankOntRow()); persist(); renderOnt(); });
 
 function renderRight(){
+  document.getElementById("sessionSelect").value=S.activeSession||"session1";
+  document.getElementById("search").placeholder=
+    "Search "+(SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name+" concepts…";
   renderRaw(); renderCats(); renderCausal(); renderOnt();
 
   const sel=document.getElementById("newRawCat");
@@ -1638,15 +1770,15 @@ function renderRight(){
   opt("__board__","On the board ("+S.scene.nodes.length+")");
   visibleTypes().forEach(t=>{
     const g=document.createElement("optgroup"); g.label=t.name;
-    const n=S.concepts.filter(c=>c.type===t.id).length;
+    const n=activeConcepts().filter(c=>c.type===t.id).length;
     const o=document.createElement("option"); o.value=t.id; o.textContent=t.name+" — all ("+n+")"; g.appendChild(o);
     S.subs.filter(s=>s.type===t.id).forEach(s=>{
-      const k=S.concepts.filter(c=>c.sub===s.id).length;
+      const k=activeConcepts().filter(c=>c.sub===s.id).length;
       const oo=document.createElement("option"); oo.value=s.id; oo.textContent=s.name+" ("+k+")"; g.appendChild(oo);
     });
     seed.appendChild(g);
   });
-  opt("__all__","All concepts ("+S.concepts.length+")");
+  opt("__all__","All concepts ("+activeConcepts().length+")");
   if(keep2) seed.value=keep2;
 }
 
@@ -1658,19 +1790,28 @@ document.querySelectorAll(".tab").forEach(t=>{
     document.getElementById("pane-"+t.dataset.pane).classList.add("on");
   });
 });
+document.getElementById("sessionSelect").addEventListener("change",e=>{
+  S.activeSession=e.target.value;
+  pendingAdd=null; pendingSubType=null; pendingColor=null;
+  document.getElementById("search").value="";
+  selected=null;
+  persist(); render(); renderRight();
+});
 document.getElementById("search").addEventListener("input",()=>{ renderRaw(); renderCats(); });
 
 function addRawConcept(){
   const i=document.getElementById("newRaw"), s=document.getElementById("newRawCat");
   const v=i.value.trim(); if(!v) return;
-  const c={id:nid("c"), label:v, type:null, sub:null, mine:true};
+  const c={id:nid("c"), label:v, type:null, sub:null, mine:true,
+           session:S.activeSession||"session1"};
   applyCatValue(c, s.value);
   S.concepts.push(c); i.value=""; persist(); renderRight(); i.focus();
 }
 document.getElementById("bAddType").addEventListener("click",()=>{
   const i=document.getElementById("newTypeName"), v=i.value.trim(); if(!v) return;
   let id="t_"+slug(v); while(S.types.some(t=>t.id===id)) id+="-"+Math.floor(Math.random()*90+10);
-  S.types.push({id, name:v, color:TYPE_COLORS[S.types.length%TYPE_COLORS.length]});
+  S.types.push({id, name:v, color:TYPE_COLORS[S.types.length%TYPE_COLORS.length],
+                session:S.activeSession||"session1"});
   S.ont.forEach(r=>{ if(r[id]===undefined) r[id]=""; });
   i.value=""; persist(); renderRight();
 });
@@ -1723,11 +1864,11 @@ document.getElementById("bNoteToggle").addEventListener("click",()=>{
 /* =========================================================
    4. Versions — one snapshot per ontologizing session
    ========================================================= */
-const SNAP_KEYS=["meta","types","subs","concepts","causal","ont","scene","notes"];
+const SNAP_KEYS=["activeSession","meta","types","subs","concepts","causal","ont","scene","notes"];
 const grabSnap = () => { const o={}; SNAP_KEYS.forEach(k=>o[k]=JSON.parse(JSON.stringify(S[k]))); return o; };
 const putSnap  = sn => SNAP_KEYS.forEach(k=>{ if(sn[k]!==undefined) S[k]=JSON.parse(JSON.stringify(sn[k])); });
 
-function nextLabel(){ return "Session "+(S.versions.filter(v=>!v.auto).length+1); }
+function nextLabel(){ return "Version "+(S.versions.filter(v=>!v.auto).length+1); }
 function saveVersion(label, auto){
   const v={id:nid("v"), label:label||nextLabel(), ts:Date.now(), auto:!!auto, snap:grabSnap()};
   S.versions.unshift(v);
@@ -1804,6 +1945,8 @@ function renderVersions(){
 function restoreVersion(v){
   saveVersion("Before restoring "+v.label, true);
   putSnap(v.snap);
+  markLegacyAsSession1(S);
+  addSession2Seed(S);  /* Old saved versions predate Session 2; add its raw starter list on restore. */
   history.length=0; future.length=0; updUndo();
   document.getElementById("mName").value=S.meta.name||"";
   document.getElementById("mTitle").value=S.meta.title||"";
@@ -1869,14 +2012,15 @@ const TBL='border="1" cellspacing="0" cellpadding="6" style="border-collapse:col
 const TH ='style="background:#EDEFF2;text-align:left"';
 
 function ontTableHTML(){
-  let h='<table '+TBL+'><tr>'+S.types.map(t=>'<th '+TH+'>'+esc(t.name)+'</th>').join("")+'</tr>';
-  S.ont.forEach(r=>{ h+='<tr>'+S.types.map(t=>'<td valign="top">'+nl2br(r[t.id]||"")+'</td>').join("")+'</tr>'; });
+  const exportTypes=visibleTypes();
+  let h='<table '+TBL+'><tr>'+exportTypes.map(t=>'<th '+TH+'>'+esc(t.name)+'</th>').join("")+'</tr>';
+  S.ont.forEach(r=>{ h+='<tr>'+exportTypes.map(t=>'<td valign="top">'+nl2br(r[t.id]||"")+'</td>').join("")+'</tr>'; });
   return h+'</table>';
 }
 function conceptTableHTML(){
   let h='<table '+TBL+'><tr><th '+TH+'>Type</th><th '+TH+'>Subtype</th><th '+TH+'>Concept</th>'+
         '<th '+TH+'>Source</th><th '+TH+'>On board</th></tr>';
-  S.concepts.forEach(c=>{
+  activeConcepts().forEach(c=>{
     const t=typeOf(c.type), sb=c.sub?subOf(c.sub):null;
     h+='<tr><td>'+esc(t?t.name:"(uncategorized)")+'</td><td>'+esc(sb?sb.name:"")+'</td><td>'+
        esc(c.label)+'</td><td>'+(c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td></tr>';
@@ -1917,6 +2061,7 @@ function wordBlob(tag){
   const body='<h1>Problem-solving Ontology</h1>'+
     '<p><b>Student:</b> '+esc(S.meta.name||"-")+'<br>'+
     '<b>Core problem:</b> '+esc(S.meta.title||"-")+'<br>'+
+    '<b>Dataset:</b> '+esc((SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name)+'<br>'+
     (tag?'<b>Version:</b> '+esc(tag)+'<br>':'')+
     '<b>Exported:</b> '+new Date().toLocaleString("en-US")+'</p>'+
     '<h2>1. Ontology editor</h2>'+ontTableHTML()+
@@ -1946,6 +2091,7 @@ function excelBlob(){
     'style="font-family:Calibri,sans-serif;font-size:10pt">'+
     '<tr><td><b>Student</b></td><td>'+esc(S.meta.name||"-")+'</td></tr>'+
     '<tr><td><b>Core problem</b></td><td>'+esc(S.meta.title||"-")+'</td></tr>'+
+    '<tr><td><b>Dataset</b></td><td>'+esc((SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name)+'</td></tr>'+
     '<tr><td><b>Exported</b></td><td>'+esc(new Date().toLocaleString("en-US"))+'</td></tr></table><br>';
   const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" '+
     'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'+
