@@ -253,9 +253,9 @@
     <div id="tools">
       <button class="tool on" data-tool="select">↖ Select</button>
       <button class="tool" data-tool="pen">✎ Draw</button>
-      <button class="tool" data-tool="link">↔ Connect</button>
+      <button class="tool" data-tool="link" title="Click two nodes, or drag from one node to another">↔ Connect</button>
       <button class="tool" data-tool="text">T Text</button>
-      <button class="tool" data-tool="erase" title="Click a node, a pen stroke, an arrow or a text to remove it">⌫ Erase</button>
+      <button class="tool" data-tool="erase" title="Click or drag across a node, pen stroke, arrow or text to remove it">⌫ Erase</button>
       <span class="sep"></span>
       <span id="inkGroup" title="Colour and thickness apply to Draw and Text">
         <span id="colors"></span>
@@ -295,6 +295,7 @@
       <select id="sessionSelect" aria-label="Choose a concept dataset">
         <option value="session1">Session 1</option>
         <option value="session2">Session 2</option>
+        <option value="session3">Session 3(Aggregation)</option>
       </select>
     </div>
     <div id="tabs">
@@ -392,7 +393,8 @@ const DEFAULT_TYPES = [
 ];
 const SESSION_INFO = [
   {id:"session1", name:"Session 1"},
-  {id:"session2", name:"Session 2"}
+  {id:"session2", name:"Session 2"},
+  {id:"session3", name:"Session 3(Aggregation)"}
 ];
 const sessionOf = item => (item && item.session) || "session1";
 /* Keep the original framework in saved data, but temporarily leave it out of
@@ -531,6 +533,57 @@ function session2Concepts(){
   })));
 }
 
+/* Session 3 concepts are also supplied as a raw, uncategorized dataset.
+   Source headings are retained here only to keep the instructor's list readable. */
+const SESSION3_GROUPS = [
+  ["task environment/assumptions", [
+    "demons", "autonomous actors", "inconsistent information", "info. distrib. in space & time"
+  ]],
+  ["data", [
+    "features / shouts", "viewpoints", "messages", "text tokens", "image pixels", "messages (theories)"
+  ]],
+  ["representations", [
+    "frames", "concepts", "specialized knowledge memories", "theories", "procedures as “to-do” lists",
+    "procedures for decomposition", "level of abstraction"
+  ]],
+  ["problem-solving processes", [
+    "aggregation", "deep learning", "pattern recognition", "feature detection", "ensemble methods",
+    "averaging", "independent predictions", "diverse predictions", "non-random predictions",
+    "peer review", "due process procedures", "message passing", "negotiation", "protocols",
+    "negotiating", "deep learning", "to-do lists done", "storing info./remembering"
+  ]],
+  ["outcomes", [
+    "low-bandwidth info. proc.", "error cancellation", "wisdom of the crowd", "pluralism",
+    "tolerance of diversity", "self-correcting", "reasonableness", "achieving community goals",
+    "concurrency", "understanding", "functional understanding", "envisioning a goal"
+  ]],
+  ["technologies/tools", ["generative AI models"]],
+  ["theories/people/places", [
+    "learning-in-a-society", "Carl Hewitt", "Actor model", "Pandemonium system", "Oliver Selfridge",
+    "statistical approach", "Francis Galton", "scientific comm. metaphor", "Durkheim test",
+    "Emile Durkheim", "Alan Turing", "Susan Leigh Star", "generative AI models", "Gordon Pask",
+    "conversation theory"
+  ]],
+  ["settings", [
+    "letter perception task", "Sudoku", "legal system analogy", "biological cells",
+    "timekeeping frame", "watch design and repair"
+  ]],
+  ["organizational structure", [
+    "compete", "cooperate", "reach consensus", "hierarchy of frames", "decision demon/CEO",
+    "hierarchy", "competing predictions", "cognitive demons", "cooperation", "blackboard systems",
+    "knowledge sources", "top. mgmt. as schedulers", "operating system analogy", "ensemble",
+    "learners", "unspecialized novices", "decision-making committees", "middle management",
+    "hidden units", "layers of abstraction", "generative AI agents", "abstract procedures"
+  ]]
+];
+function session3Concepts(){
+  let i=0;
+  return SESSION3_GROUPS.flatMap(g=>g[1].map(label=>({
+    id:"s3c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+    mine:false, session:"session3"
+  })));
+}
+
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
 const STORE_KEY = "concept-explorer-v2";
 /* Keep one untouched copy of pre-dataset browser data. This uses a different
@@ -545,14 +598,14 @@ function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, 
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:5,
+    schema:7,
     activeSession:"session1",
     meta:{name:"", title:""},
     types: DEFAULT_TYPES.map(t=>({...t,session:"session1"})),
     subs: baseSubs(),
     concepts: SAMPLE.map(([type,sub,label])=>({
       id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null,
-      mine:false, session:"session1" })).concat(session2Concepts()),
+      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
     scene:{strokes:[], nodes:[], texts:[], links:[]},
@@ -662,6 +715,12 @@ function addSession2Seed(d){
   session2Concepts().forEach(c=>{ if(!d.concepts.some(x=>x.id===c.id)) d.concepts.push(c); });
   return d;
 }
+function addSession3Seed(d){
+  d.types=d.types||[]; d.concepts=d.concepts||[];
+  session3Concepts().forEach(c=>{ if(!d.concepts.some(x=>x.id===c.id)) d.concepts.push(c); });
+  return d;
+}
+function addDatasetSeeds(d){ return addSession3Seed(addSession2Seed(d)); }
 function removeDefaultSession2Categories(d){
   d.types=d.types||[]; d.concepts=d.concepts||[];
   let i=0;
@@ -683,17 +742,27 @@ function markLegacyAsSession1(d){
   return d;
 }
 function migrate(d){
-  if(d.schema===5) return markLegacyAsSession1(d);
+  if(d.schema===7) return markLegacyAsSession1(d);
+  if(d.schema===6){
+    markLegacyAsSession1(d);
+    d.schema=7;
+    return addDatasetSeeds(d);
+  }
+  if(d.schema===5){
+    markLegacyAsSession1(d);
+    d.schema=7;
+    return addDatasetSeeds(d);  /* Repair empty Session 2 and add Session 3. */
+  }
   if(d.schema===4){
     markLegacyAsSession1(d);
     removeDefaultSession2Categories(d);
-    d.schema=5;
-    return addSession2Seed(d);
+    d.schema=7;
+    return addDatasetSeeds(d);
   }
   if(d.schema===3){
-    d.schema=5;
+    d.schema=7;
     markLegacyAsSession1(d);
-    return addSession2Seed(d);
+    return addDatasetSeeds(d);
   }
   if(d.schema===2){
     d.schema=3;
@@ -721,7 +790,7 @@ function migrate(d){
       return n;
     });
   }
-  return addSession2Seed(addMissingSampleConcepts(out));
+  return addDatasetSeeds(addMissingSampleConcepts(out));
 }
 /* Older boards stored a copy of the label on the node. Bind each of those to a
    real concept — matching by name, and creating the concept when it is missing —
@@ -770,7 +839,7 @@ function restore(){
     if(!raw) return false;
     const d=JSON.parse(raw);
     if(!d || !d.concepts) return false;
-    if((Number(d.schema)||0)<5 && !localStorage.getItem(PRE_DATASET_BACKUP_KEY)){
+    if((Number(d.schema)||0)<7 && !localStorage.getItem(PRE_DATASET_BACKUP_KEY)){
       try{ localStorage.setItem(PRE_DATASET_BACKUP_KEY, raw); }
       catch(e){ /* If storage is full, STORE_KEY itself still holds the untouched original. */ }
     }
@@ -803,6 +872,7 @@ const cv=document.getElementById("board");
 const ctx=cv.getContext("2d");
 const editor=document.getElementById("nodeEditor");
 let DPR=1, CW=0, CH=0, selected=null, linkFrom=null, drag=null, drawing=null, hoverLink=null;
+let linkGesture=null, eraseGesture=false, eraseChanged=false;
 const history=[], future=[];
 
 function resizeCanvas(){
@@ -915,6 +985,13 @@ function render(target){
     g.lineTo(ex-Math.cos(ang+.4)*9, ey-Math.sin(ang+.4)*9);
     g.closePath(); g.fill();
   });
+  if(linkGesture && linkGesture.moved){
+    const a=S.scene.nodes.find(n=>n.id===linkGesture.from), b=linkGesture.current;
+    if(a&&b){
+      g.strokeStyle="#2f6df6"; g.lineWidth=2; g.setLineDash([6,4]);
+      g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]);
+    }
+  }
   S.scene.strokes.forEach(s=>{
     if(s.pts.length<2) return;
     g.strokeStyle=s.color; g.lineWidth=s.size; g.lineJoin="round";
@@ -963,20 +1040,21 @@ function hit(x,y){
   return null;
 }
 const pos = e => { const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+function connectNodes(from,to){
+  if(!from || !to || from===to) return false;
+  if(S.scene.links.some(l=>l.from===from && l.to===to)){
+    toast("These concepts are already connected"); return false;
+  }
+  snapshot(); S.scene.links.push({id:nid("l"),from,to});
+  persist(); toast("Connected"); return true;
+}
 
 cv.addEventListener("pointerdown", e=>{
   cv.setPointerCapture(e.pointerId);
   const p=pos(e), h=hit(p.x,p.y), tool=S.tool;
   if(tool==="pen"){ snapshot(); drawing={color:S.color,size:S.size,pts:[p]}; S.scene.strokes.push(drawing); return; }
   if(tool==="erase"){
-    const si = h ? -1 : strokeIndexNear(p);      /* stacking order: node/text, pen stroke, arrow */
-    const link = (h || si>=0) ? null : linkNear(p);
-    if(!h && si<0 && !link) return;              /* nothing here — leave undo history alone */
-    snapshot();
-    if(h) removeItem(h);
-    else if(si>=0) S.scene.strokes.splice(si,1);
-    else { S.scene.links=S.scene.links.filter(x=>x.id!==link.id); toast("Arrow removed"); }
-    hoverLink=null; render(); persist(); renderRight(); return;
+    eraseGesture=true; eraseChanged=false; eraseAt(p); return;
   }
   if(tool==="text"){
     snapshot();
@@ -987,9 +1065,13 @@ cv.addEventListener("pointerdown", e=>{
   if(tool==="link"){
     if(h && h.kind==="node"){
       if(linkFrom && linkFrom!==h.id){
-        snapshot(); S.scene.links.push({id:nid("l"),from:linkFrom,to:h.id}); linkFrom=null; persist();
-      } else linkFrom=h.id;
-    } else linkFrom=null;
+        connectNodes(linkFrom,h.id); linkFrom=null; linkGesture=null;
+      } else {
+        linkFrom=h.id;
+        linkGesture={from:h.id,start:p,current:p,moved:false};
+        toast("Click another node, or drag to it");
+      }
+    } else { linkFrom=null; linkGesture=null; }
     render(); return;
   }
   selected = h ? {kind:h.kind,id:h.id} : null;
@@ -998,6 +1080,14 @@ cv.addEventListener("pointerdown", e=>{
 });
 cv.addEventListener("pointermove", e=>{
   const p=pos(e);
+  if(S.tool==="link" && linkGesture){
+    linkGesture.current=p;
+    if(Math.hypot(p.x-linkGesture.start.x,p.y-linkGesture.start.y)>5) linkGesture.moved=true;
+    if(linkGesture.moved) render();
+  }
+  if(S.tool==="erase" && eraseGesture && e.buttons){
+    eraseAt(p); return;
+  }
   if(S.tool==="erase" && !drawing && !drag){
     const l = hit(p.x,p.y) ? null : linkNear(p);
     const id = l ? l.id : null;
@@ -1015,7 +1105,23 @@ cv.addEventListener("pointermove", e=>{
     if(o){ o.x=p.x-drag.dx; o.y=p.y-drag.dy; render(); }
   }
 });
-function endPointer(){ if(drawing){ drawing=null; persist(); } if(drag){ drag=null; persist(); } }
+function endPointer(e){
+  if(drawing){ drawing=null; persist(); }
+  if(drag){ drag=null; persist(); }
+  if(linkGesture){
+    if(linkGesture.moved){
+      const p=pos(e), h=hit(p.x,p.y);
+      if(h && h.kind==="node" && h.id!==linkGesture.from) connectNodes(linkGesture.from,h.id);
+      linkFrom=null;
+    }
+    linkGesture=null; render();
+  }
+  if(eraseGesture){
+    eraseGesture=false;
+    if(eraseChanged) persist();
+    eraseChanged=false;
+  }
+}
 cv.addEventListener("pointerup", endPointer);
 cv.addEventListener("pointerleave", ()=>{ if(hoverLink){ hoverLink=null; render(); } });
 cv.addEventListener("pointercancel", endPointer);
@@ -1045,6 +1151,17 @@ function linkNear(p){
     if(d<=bestD){ bestD=d; best=l; }
   });
   return best;
+}
+function eraseAt(p){
+  const h=hit(p.x,p.y);
+  const si=h ? -1 : strokeIndexNear(p);            /* node/text, pen stroke, then arrow */
+  const link=(h || si>=0) ? null : linkNear(p);
+  if(!h && si<0 && !link) return false;
+  if(!eraseChanged){ snapshot(); eraseChanged=true; }
+  if(h) removeItem(h);
+  else if(si>=0) S.scene.strokes.splice(si,1);
+  else { S.scene.links=S.scene.links.filter(x=>x.id!==link.id); toast("Arrow removed"); }
+  hoverLink=null; render(); renderRight(); return true;
 }
 function removeItem(h){
   if(h.kind==="node"){
@@ -1146,7 +1263,7 @@ wrap.addEventListener("drop", e=>{
 });
 
 function setTool(name){
-  S.tool=name; linkFrom=null; hoverLink=null;
+  S.tool=name; linkFrom=null; linkGesture=null; eraseGesture=false; eraseChanged=false; hoverLink=null;
   document.querySelectorAll(".tool").forEach(x=>x.classList.toggle("on", x.dataset.tool===name));
   cv.style.cursor = name==="pen"?"crosshair": name==="text"?"text": name==="erase"?"cell":"default";
   paintInk(); render(); persist();
@@ -1946,7 +2063,7 @@ function restoreVersion(v){
   saveVersion("Before restoring "+v.label, true);
   putSnap(v.snap);
   markLegacyAsSession1(S);
-  addSession2Seed(S);  /* Old saved versions predate Session 2; add its raw starter list on restore. */
+  addDatasetSeeds(S);  /* Old saved versions may predate later raw datasets. */
   history.length=0; future.length=0; updUndo();
   document.getElementById("mName").value=S.meta.name||"";
   document.getElementById("mTitle").value=S.meta.title||"";
