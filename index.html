@@ -296,6 +296,7 @@
         <option value="session1">Session 1</option>
         <option value="session2">Session 2</option>
         <option value="session3">Session 3(Aggregation)</option>
+        <option value="session4">Session 4(Interaction Strategies)</option>
       </select>
     </div>
     <div id="tabs">
@@ -394,7 +395,8 @@ const DEFAULT_TYPES = [
 const SESSION_INFO = [
   {id:"session1", name:"Session 1"},
   {id:"session2", name:"Session 2"},
-  {id:"session3", name:"Session 3(Aggregation)"}
+  {id:"session3", name:"Session 3(Aggregation)"},
+  {id:"session4", name:"Session 4(Interaction Strategies)"}
 ];
 const sessionOf = item => (item && item.session) || "session1";
 /* Keep the original framework in saved data, but temporarily leave it out of
@@ -526,11 +528,16 @@ const SESSION2_GROUPS = [
   ]]
 ];
 function session2Concepts(){
-  let i=0;
-  return SESSION2_GROUPS.flatMap(g=>g[2].map(label=>({
-    id:"s2c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
-    mine:false, session:"session2"
-  })));
+  let i=0, h=0;
+  return SESSION2_GROUPS.flatMap(g=>{
+    const dup=g[2].some(l=>l.trim().toLowerCase()===g[1].trim().toLowerCase());
+    const head=dup ? [] : [{ id:"s2h_"+String(++h).padStart(3,"0"), label:g[1],
+                             type:null, sub:null, mine:false, session:"session2" }];
+    return head.concat(g[2].map(label=>({
+      id:"s2c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+      mine:false, session:"session2"
+    })));
+  });
 }
 
 /* Session 3 concepts are also supplied as a raw, uncategorized dataset.
@@ -577,11 +584,69 @@ const SESSION3_GROUPS = [
   ]]
 ];
 function session3Concepts(){
-  let i=0;
-  return SESSION3_GROUPS.flatMap(g=>g[1].map(label=>({
-    id:"s3c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
-    mine:false, session:"session3"
-  })));
+  let i=0, h=0;
+  return SESSION3_GROUPS.flatMap(g=>{
+    const dup=g[1].some(l=>l.trim().toLowerCase()===g[0].trim().toLowerCase());
+    const head=dup ? [] : [{ id:"s3h_"+String(++h).padStart(3,"0"), label:g[0],
+                             type:null, sub:null, mine:false, session:"session3" }];
+    return head.concat(g[1].map(label=>({
+      id:"s3c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+      mine:false, session:"session3"
+    })));
+  });
+}
+
+/* Session 4 concepts, supplied as a raw, uncategorized dataset like Sessions 2 and 3. */
+const SESSION4_GROUPS = [
+  ["environment", [
+    "physical world", "cultural world", "concrete phenomena", "variety",
+    "non-modern complexity", "real-world physical envir.", "cultural embeddedness",
+    "world-as-world"
+  ]],
+  ["data", [
+    "world is its own best model", "metaphors of phys. world", "resources for action",
+    "graphical user interfaces (GUIs)", "interactive media", "screens", "graphical objects",
+    "circuit diagrams"
+  ]],
+  ["prob-solving processes", [
+    "defamiliarizing", "critical tech. practice (CTP)", "surfacing assumptions",
+    "evaluating assumptions", "improvised actions", "coping", "moment-to-moment action",
+    "direct interactions", "reacting", "indexing", "registering", "accounting for the world",
+    "physical actions", "direct manipulation"
+  ]],
+  ["cognitive assumptions", [
+    "perceptual senses", "physical movement", "sensorimotor action",
+    "limits of embodied actions", "local culture"
+  ]],
+  ["outcomes", [
+    "experiencing phenomena", "wishful mnemonics", "homeostasis", "comportment",
+    "situatedness", "embodiment", "embedding", "authentic alignment", "breakdowns"
+  ]],
+  ["settings", [
+    "W. Grey Walter\u2019s tortoise", "Rodney Brooks\u2019 Roomba", "thermostat example",
+    "crosswalk example", "door handle example", "that-chair-right-there"
+  ]],
+  ["theories/people/places", [
+    "Rene Descartes", "Cartesianism", "cognitivism", "Rodney Brooks", "Phil Agre",
+    "Moravec\u2019s paradox", "creature hypothesis", "Norbert Wiener", "cybernetics",
+    "W. Ross Ashby", "W. Grey Walter", "Brian Cantwell-Smith", "electrical engineers",
+    "MIT AI lab", "Ivan Sutherland", "Sketchpad"
+  ]],
+  ["organizational structure", [
+    "subsumption architecture", "multiple layers of goals"
+  ]]
+];
+function session4Concepts(){
+  let i=0, h=0;
+  return SESSION4_GROUPS.flatMap(g=>{
+    const dup=g[1].some(l=>l.trim().toLowerCase()===g[0].trim().toLowerCase());
+    const head=dup ? [] : [{ id:"s4h_"+String(++h).padStart(3,"0"), label:g[0],
+                             type:null, sub:null, mine:false, session:"session4" }];
+    return head.concat(g[1].map(label=>({
+      id:"s4c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+      mine:false, session:"session4"
+    })));
+  });
 }
 
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
@@ -598,14 +663,14 @@ function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, 
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:7,
+    schema:10,
     activeSession:"session1",
     meta:{name:"", title:""},
     types: DEFAULT_TYPES.map(t=>({...t,session:"session1"})),
     subs: baseSubs(),
     concepts: SAMPLE.map(([type,sub,label])=>({
       id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null,
-      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts()),
+      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
     scene:{strokes:[], nodes:[], texts:[], links:[]},
@@ -710,17 +775,29 @@ function addMissingSampleConcepts(d){
   });
   return d;
 }
-function addSession2Seed(d){
+function seedSession(d, list){
   d.types=d.types||[]; d.concepts=d.concepts||[];
-  session2Concepts().forEach(c=>{ if(!d.concepts.some(x=>x.id===c.id)) d.concepts.push(c); });
+  const have=new Set(d.concepts.map(c=>c.id));
+  list.forEach((c,idx)=>{
+    if(have.has(c.id)) return;
+    let at=-1;
+    for(let k=idx-1;k>=0;k--){            /* right after the nearest item already present */
+      const pos=d.concepts.findIndex(x=>x.id===list[k].id);
+      if(pos>=0){ at=pos+1; break; }
+    }
+    if(at<0) for(let k=idx+1;k<list.length;k++){   /* nothing before it: go ahead of what follows */
+      const pos=d.concepts.findIndex(x=>x.id===list[k].id);
+      if(pos>=0){ at=pos; break; }
+    }
+    if(at<0) at=d.concepts.length;        /* the whole block is new */
+    d.concepts.splice(at,0,c); have.add(c.id);
+  });
   return d;
 }
-function addSession3Seed(d){
-  d.types=d.types||[]; d.concepts=d.concepts||[];
-  session3Concepts().forEach(c=>{ if(!d.concepts.some(x=>x.id===c.id)) d.concepts.push(c); });
-  return d;
-}
-function addDatasetSeeds(d){ return addSession3Seed(addSession2Seed(d)); }
+function addSession2Seed(d){ return seedSession(d, session2Concepts()); }
+function addSession3Seed(d){ return seedSession(d, session3Concepts()); }
+function addSession4Seed(d){ return seedSession(d, session4Concepts()); }
+function addDatasetSeeds(d){ return addSession4Seed(addSession3Seed(addSession2Seed(d))); }
 function removeDefaultSession2Categories(d){
   d.types=d.types||[]; d.concepts=d.concepts||[];
   let i=0;
@@ -742,25 +819,40 @@ function markLegacyAsSession1(d){
   return d;
 }
 function migrate(d){
-  if(d.schema===7) return markLegacyAsSession1(d);
+  if(d.schema===10) return markLegacyAsSession1(d);
+  if(d.schema===9){                 /* add the Session 2 and 3 group headings */
+    markLegacyAsSession1(d);
+    d.schema=10;
+    return addDatasetSeeds(d);
+  }
+  if(d.schema===8){                 /* add the group headings that were left out at first */
+    markLegacyAsSession1(d);
+    d.schema=10;
+    return addDatasetSeeds(d);
+  }
+  if(d.schema===7){                 /* add the Session 4 dataset to work saved before it existed */
+    markLegacyAsSession1(d);
+    d.schema=10;
+    return addDatasetSeeds(d);
+  }
   if(d.schema===6){
     markLegacyAsSession1(d);
-    d.schema=7;
+    d.schema=10;
     return addDatasetSeeds(d);
   }
   if(d.schema===5){
     markLegacyAsSession1(d);
-    d.schema=7;
+    d.schema=10;
     return addDatasetSeeds(d);  /* Repair empty Session 2 and add Session 3. */
   }
   if(d.schema===4){
     markLegacyAsSession1(d);
     removeDefaultSession2Categories(d);
-    d.schema=7;
+    d.schema=10;
     return addDatasetSeeds(d);
   }
   if(d.schema===3){
-    d.schema=7;
+    d.schema=10;
     markLegacyAsSession1(d);
     return addDatasetSeeds(d);
   }
