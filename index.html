@@ -335,10 +335,10 @@
     <div id="datasetRow">
       <label for="sessionSelect">Dataset</label>
       <select id="sessionSelect" aria-label="Choose a concept dataset">
-        <option value="session1">Session 1</option>
-        <option value="session2">Session 2</option>
-        <option value="session3">Session 3(Aggregation)</option>
-        <option value="session4">Session 4(Interaction Strategies)</option>
+        <option value="session1">Credit Assignment</option>
+        <option value="session2">Information Processing Strategies</option>
+        <option value="session3">Aggregation Strategies</option>
+        <option value="session4">Interaction Strategies</option>
       </select>
       <button class="btn" id="bAddDataset" title="Create an empty dataset">+ Dataset</button>
     </div>
@@ -458,10 +458,10 @@ const DEFAULT_TYPES = [
   {id:"context", name:"Context",                   color:"#495057"}
 ];
 const SESSION_INFO = [
-  {id:"session1", name:"Session 1"},
-  {id:"session2", name:"Session 2"},
-  {id:"session3", name:"Session 3(Aggregation)"},
-  {id:"session4", name:"Session 4(Interaction Strategies)"}
+  {id:"session1", name:"Credit Assignment"},
+  {id:"session2", name:"Information Processing Strategies"},
+  {id:"session3", name:"Aggregation Strategies"},
+  {id:"session4", name:"Interaction Strategies"}
 ];
 const datasetsFor = state => SESSION_INFO.concat(Array.isArray(state.customDatasets)?state.customDatasets:[]);
 const datasetName = (id,state=S) =>
