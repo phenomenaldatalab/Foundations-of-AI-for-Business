@@ -48,6 +48,18 @@
   #grip:hover{background:var(--accent)}
   #right{width:440px;min-width:300px;max-width:760px;display:flex;flex-direction:column;
          background:var(--panel);border-left:1px solid var(--line)}
+  /* Focus modes change only the layout; the board, lists and saved work stay intact. */
+  body.focus-board #top,body.focus-list #top,
+  body.focus-board #noteGrip,body.focus-list #noteGrip,
+  body.focus-board #notes,body.focus-list #notes,
+  body.focus-board #grip,body.focus-list #grip{display:none}
+  body.focus-board #right,body.focus-list #left{display:none}
+  body.focus-board #left{min-width:0;width:100%}
+  body.focus-list #right{flex:1;width:100%;max-width:none;min-width:0;border-left:0}
+  body.focus-notes #top,body.focus-notes #main,body.focus-notes #noteGrip{display:none}
+  body.focus-notes #notes{flex:1 1 auto!important;height:auto!important;min-height:0;border-top:0}
+  body.focus-notes #notes.closed #noteArea{display:block}
+  body.focus-notes #bNoteToggle{display:none}
 
   /* ---------- canvas ---------- */
   #tools{display:flex;align-items:center;gap:6px;padding:8px 12px;
@@ -79,14 +91,20 @@
             font-size:11px;max-width:210px}
 
   /* ---------- right panel ---------- */
-  #rHead{padding:10px 12px 0}
-  #search{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 10px;outline:none}
+  #rHead{padding:10px 12px 0;display:flex;align-items:center;gap:8px}
+  #search{flex:1;min-width:0;border:1px solid var(--line);border-radius:6px;padding:7px 10px;outline:none}
   #search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   #datasetRow{display:flex;align-items:center;gap:8px;padding:10px 12px 0}
   #datasetRow label{font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
-  #sessionSelect{flex:1;border:1px solid var(--line);background:#f8f9fb;color:var(--text);
+  #sessionSelect{flex:1;min-width:0;border:1px solid var(--line);background:#f8f9fb;color:var(--text);
                  padding:8px 10px;border-radius:7px;font-weight:700;outline:none}
   #sessionSelect:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  #datasetAddRow[hidden]{display:none}
+  #datasetAddRow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px 0}
+  #datasetAddRow input{flex:1;min-width:120px;border:1px solid var(--line);border-radius:6px;
+                       padding:7px 9px;outline:none}
+  #datasetAddRow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  #datasetAddRow .hint{flex-basis:100%}
   #tabs{display:flex;gap:2px;padding:10px 12px 0;border-bottom:1px solid var(--line)}
   .tab{border:none;background:transparent;padding:8px 10px;border-bottom:2px solid transparent;
        color:var(--muted);font-weight:600;border-radius:6px 6px 0 0;white-space:nowrap}
@@ -145,12 +163,15 @@
   .icb:hover{background:#e6e9ee;color:var(--text)}
   .icb.del:hover{background:#fdeaea;color:var(--danger)}
   .tag-mine{font-size:9px;background:var(--accent-soft);color:var(--accent);border-radius:3px;padding:1px 4px;flex:0 0 auto}
+  .annotationMark{font-size:10px;color:var(--accent);background:var(--accent-soft);
+                  border-radius:4px;padding:2px 5px;flex:0 0 auto}
   .miniSel{border:1px solid var(--accent);border-radius:5px;padding:3px 4px;font-size:11px;background:#fff;max-width:190px}
   .inlineAdd{display:flex;gap:5px;padding:4px 6px 6px}
   .inlineAdd input{flex:1;border:1px solid var(--accent);border-radius:5px;padding:5px 7px;outline:none;min-width:0}
 
   .typeBlock{border:1px solid var(--line2);border-radius:8px;margin-bottom:10px;overflow:hidden}
-  .typeHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8f9fb;cursor:pointer}
+  .typeHead{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f8f9fb;cursor:grab}
+  .typeHead:active{cursor:grabbing}
   .typeHead .name{flex:1;font-weight:700;font-size:12px}
   .typeHead .cnt{font-size:11px;color:var(--muted)}
   .typeBody{padding:2px 6px 8px}
@@ -195,6 +216,20 @@
     box-shadow:0 12px 34px rgba(0,0,0,.16);display:none;padding:12px}
   #verPanel.on{display:block}
   #verPanel h3{margin:0 0 4px;font-size:13px}
+  #annotationBackdrop[hidden]{display:none}
+  #annotationBackdrop{position:fixed;inset:0;z-index:60;background:rgba(22,29,42,.38);
+                      display:flex;align-items:center;justify-content:center;padding:16px}
+  #annotationDialog{width:min(520px,100%);max-height:min(80vh,650px);overflow:auto;background:#fff;
+                    border:1px solid var(--line);border-radius:12px;padding:18px;
+                    box-shadow:0 18px 50px rgba(0,0,0,.2)}
+  #annotationDialog h2{font-size:16px;margin:0 0 14px}
+  #annotationDialog label{display:block;font-size:12px;font-weight:700;margin:12px 0 6px}
+  #annotationDialog input,#annotationDialog textarea{display:block;width:100%;border:1px solid var(--line);
+                    border-radius:7px;padding:9px 10px;outline:none;background:#fff}
+  #annotationDialog input:focus,#annotationDialog textarea:focus{border-color:var(--accent);
+                    box-shadow:0 0 0 3px var(--accent-soft)}
+  #annotationDialog textarea{min-height:170px;resize:vertical;line-height:1.5}
+  #annotationDialog .dialogActions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
   .verRow{border:1px solid var(--line2);border-radius:8px;padding:9px 10px;margin-top:8px}
   .verRow .vtop{display:flex;align-items:center;gap:8px}
   .verRow .vlabel{flex:1;font-weight:700;font-size:12.5px;outline:none;min-width:0}
@@ -216,6 +251,7 @@
   #notesHead b{font-size:12px}
   #noteArea{flex:1;width:100%;border:none;outline:none;resize:none;padding:2px 14px 12px;
             font-family:inherit;font-size:13px;line-height:1.6;background:transparent}
+  #noteArea.concept-drop{background:var(--accent-soft);box-shadow:inset 0 0 0 2px var(--accent)}
   #notes.closed #noteArea{display:none}
   #noteCount{margin-left:auto;font-size:11px;color:var(--muted)}
 
@@ -253,7 +289,7 @@
     <div id="tools">
       <button class="tool on" data-tool="select">↖ Select</button>
       <button class="tool" data-tool="pen">✎ Draw</button>
-      <button class="tool" data-tool="link" title="Click two nodes, or drag from one node to another">↔ Connect</button>
+      <button class="tool" data-tool="link" title="Connect two concepts, or a concept and a category card">↔ Connect</button>
       <button class="tool" data-tool="text">T Text</button>
       <button class="tool" data-tool="erase" title="Click or drag across a node, pen stroke, arrow or text to remove it">⌫ Erase</button>
       <span class="sep"></span>
@@ -266,6 +302,7 @@
       <button class="btn ghost" id="bRedo" title="Ctrl+Shift+Z">↷</button>
       <button class="btn ghost" id="bAddNode" title="Create a new concept and place it on the board">+ Concept</button>
       <button class="btn ghost" id="bClear">Clear board</button>
+      <button class="btn ghost" id="bBoardFocus" type="button" title="Expand the board (Esc to return)" aria-pressed="false">⛶ Board</button>
     </div>
     <div id="canvasWrap">
       <canvas id="board"></canvas>
@@ -273,13 +310,15 @@
     </div>
     <div id="canvasFoot">
       <span id="boardHints">
-        <b>Drag</b> a concept from the right, or <b>double-click</b> it, to place it on the board
+        <b>Drag</b> a concept or category from the right onto the board; double-click a concept to annotate it
         &nbsp;·&nbsp; a <b>node is a concept</b> (renaming it renames the concept)
+        &nbsp;·&nbsp; <b>Connect</b> a concept to another concept or category card
+        &nbsp;·&nbsp; click a category card’s arrow to expand it; a blue dot marks an annotation
         &nbsp;·&nbsp; <b>Text</b> is just a note on the sketch
       </span>
       <span id="nodeTypeWrap" title="A node takes the colour of its concept type">
         <b id="nodeTypeName"></b>
-        <span>type</span>
+        <span>category</span>
         <select id="nodeType"></select>
       </span>
       <span id="selInfo" style="margin-left:auto"></span>
@@ -289,7 +328,10 @@
   <div id="grip"></div>
 
   <div id="right">
-    <div id="rHead"><input id="search" placeholder="Search concepts…"></div>
+    <div id="rHead">
+      <input id="search" placeholder="Search concepts…">
+      <button class="btn ghost" id="bListFocus" type="button" title="Expand the concept lists (Esc to return)" aria-pressed="false">⛶ List</button>
+    </div>
     <div id="datasetRow">
       <label for="sessionSelect">Dataset</label>
       <select id="sessionSelect" aria-label="Choose a concept dataset">
@@ -298,6 +340,13 @@
         <option value="session3">Session 3(Aggregation)</option>
         <option value="session4">Session 4(Interaction Strategies)</option>
       </select>
+      <button class="btn" id="bAddDataset" title="Create an empty dataset">+ Dataset</button>
+    </div>
+    <div id="datasetAddRow" hidden>
+      <input id="newDatasetName" maxlength="60" aria-label="New dataset name" placeholder="Dataset name">
+      <button class="btn primary" id="bCreateDataset">Create</button>
+      <button class="btn" id="bCancelDataset">Cancel</button>
+      <span class="hint">Starts with empty Raw and Categories lists. The board remains shared.</span>
     </div>
     <div id="tabs">
       <button class="tab on" data-pane="raw">Raw</button>
@@ -309,7 +358,7 @@
     <div class="pane on" id="pane-raw">
       <p class="paneNote">Every concept you are working with. <b>Add</b> one below; hover a row for
         <b>✎ rename · ⇄ recategorize · ✕ delete</b>. Click <b>☆</b> to mark a concept <b>most relevant</b> and keep it pinned at the top; once something is up there you can drag others in and out. Drag a concept <b>up or down to reorder it</b>, or drag
-        it to the board to place it there. Green rows are already on the board. A node on the board <b>is</b>
+        it to the board to place it there. <b>Double-click</b> a concept to add an annotation; use <b>+</b> to place it on the board. A <b>note</b> badge marks saved annotations. Green rows are already on the board. A node on the board <b>is</b>
         its concept: rename one and the other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
       <div class="addRow">
         <input id="newRaw" placeholder="New concept name">
@@ -325,13 +374,13 @@
     </div>
 
     <div class="pane" id="pane-cat">
-      <p class="paneNote">Drag a concept onto a <b>type or subtype heading</b> to move it there, or drag it
-        above or below another concept to reorder it. Concept <b>types</b> can also be edited: click the
+      <p class="paneNote">Drag a concept onto a <b>category or subcategory heading</b> to move it there, or drag it
+        above or below another concept to reorder it. Drag a <b>category heading to the board</b> to add a collapsible card. Categories can also be edited: click the
         <b>coloured dot</b> to change a colour, click the <b>name</b> to rename, <b>⊞</b> makes a subtype,
-        <b>+</b> adds a concept, <b>✕</b> removes a type. A node on the board takes the colour of its type.</p>
+        <b>+</b> adds a concept, <b>✕</b> removes a category. Double-click a concept to annotate it. The board card follows changes made here.</p>
       <div class="addRow">
-        <input id="newTypeName" placeholder="New concept type">
-        <button class="btn" id="bAddType">Add type</button>
+        <input id="newTypeName" placeholder="New category name">
+        <button class="btn" id="bAddType">Add category</button>
       </div>
       <div id="catList"></div>
     </div>
@@ -362,8 +411,9 @@
 <div id="notes">
   <div id="notesHead">
     <b>Notes</b>
-    <span class="hint">Scratch space. Saved with your work and included in every export and version.</span>
+    <span class="hint">Scratch space. Drag a concept here to insert its name and annotation. Saved in exports and versions.</span>
     <span id="noteCount"></span>
+    <button class="btn ghost" id="bNotesFocus" type="button" title="Expand the Notes editor (Esc to return)" aria-pressed="false">⛶ Notes</button>
     <button class="btn ghost" id="bNoteToggle" title="Collapse / expand">▾</button>
   </div>
   <textarea id="noteArea" placeholder="e.g. contrarian belief, questions for the instructor, what to test next…"></textarea>
@@ -375,6 +425,21 @@
   <div class="hint" id="verHint"></div>
   <div id="storeBar"><div id="storeFill"></div></div>
   <div id="verList"></div>
+</div>
+
+<div id="annotationBackdrop" hidden>
+  <div id="annotationDialog" role="dialog" aria-modal="true" aria-labelledby="annotationHeading">
+    <h2 id="annotationHeading">Concept annotation</h2>
+    <label for="annotationName">Concept name</label>
+    <input id="annotationName" autocomplete="off">
+    <label for="annotationText">Annotation</label>
+    <textarea id="annotationText" placeholder="Add your interpretation, example, question, or source…"></textarea>
+    <div class="hint" style="margin-top:7px">Saved with this concept and included in Backup, versions, Word, and Excel.</div>
+    <div class="dialogActions">
+      <button class="btn" id="annotationCancel">Cancel</button>
+      <button class="btn primary" id="annotationSave">Save</button>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -398,6 +463,9 @@ const SESSION_INFO = [
   {id:"session3", name:"Session 3(Aggregation)"},
   {id:"session4", name:"Session 4(Interaction Strategies)"}
 ];
+const datasetsFor = state => SESSION_INFO.concat(Array.isArray(state.customDatasets)?state.customDatasets:[]);
+const datasetName = (id,state=S) =>
+  (datasetsFor(state).find(x=>x.id===id)||SESSION_INFO[0]).name;
 const sessionOf = item => (item && item.session) || "session1";
 /* Keep the original framework in saved data, but temporarily leave it out of
    the category UI. Newly created types are still shown normally. */
@@ -665,6 +733,7 @@ function blankState(){
   return {
     schema:10,
     activeSession:"session1",
+    customDatasets:[],
     meta:{name:"", title:""},
     types: DEFAULT_TYPES.map(t=>({...t,session:"session1"})),
     subs: baseSubs(),
@@ -673,7 +742,7 @@ function blankState(){
       mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
-    scene:{strokes:[], nodes:[], texts:[], links:[]},
+    scene:{strokes:[], nodes:[], texts:[], links:[], categoryCards:[]},
     notes:"", noteH:150, noteOpen:true,
     versions:[], closedTypes:{},
     tool:"select", color:PALETTE[0], size:2
@@ -815,7 +884,7 @@ function removeDefaultSession2Categories(d){
 function markLegacyAsSession1(d){
   (d.types||[]).forEach(t=>{ if(!t.session) t.session="session1"; });
   (d.concepts||[]).forEach(c=>{ if(!c.session) c.session="session1"; });
-  d.activeSession = SESSION_INFO.some(x=>x.id===d.activeSession) ? d.activeSession : "session1";
+  d.activeSession = datasetsFor(d).some(x=>x.id===d.activeSession) ? d.activeSession : "session1";
   return d;
 }
 function migrate(d){
@@ -906,12 +975,14 @@ function bindNodes(d){
 }
 function hydrate(d){
   d=migrate(d);
+  d.customDatasets = Array.isArray(d.customDatasets) ? d.customDatasets : [];
   d.types = (d.types && d.types.length) ? d.types :
     DEFAULT_TYPES.map(t=>({...t,session:"session1"}));
   d.subs = (d.subs && d.subs.length) ? d.subs : baseSubs();
   d.versions = d.versions || [];
   d.closedTypes = d.closedTypes || {};
   d.scene = d.scene || {strokes:[],nodes:[],texts:[],links:[]};
+  if(!Array.isArray(d.scene.categoryCards)) d.scene.categoryCards=[];
   d.ont = (d.ont && d.ont.length) ? d.ont : [blankOntRow()];
   d.causal = (d.causal && d.causal.length) ? d.causal : [{id:nid("r"),depth:0,text:""}];
   d.concepts = d.concepts || [];
@@ -975,6 +1046,28 @@ function resizeCanvas(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   render();
 }
+const boardFocusButton=document.getElementById("bBoardFocus");
+const listFocusButton=document.getElementById("bListFocus");
+const notesFocusButton=document.getElementById("bNotesFocus");
+let focusMode=null;
+function setFocusMode(mode){
+  focusMode=mode;
+  document.body.classList.toggle("focus-board",mode==="board");
+  document.body.classList.toggle("focus-list",mode==="list");
+  document.body.classList.toggle("focus-notes",mode==="notes");
+  boardFocusButton.textContent=mode==="board"?"↙ Exit board":"⛶ Board";
+  listFocusButton.textContent=mode==="list"?"↙ Exit list":"⛶ List";
+  notesFocusButton.textContent=mode==="notes"?"↙ Exit notes":"⛶ Notes";
+  boardFocusButton.setAttribute("aria-pressed",String(mode==="board"));
+  listFocusButton.setAttribute("aria-pressed",String(mode==="list"));
+  notesFocusButton.setAttribute("aria-pressed",String(mode==="notes"));
+  if(mode==="notes") document.getElementById("noteArea").focus();
+  if(mode!=="list" && mode!=="notes") requestAnimationFrame(resizeCanvas);
+}
+boardFocusButton.addEventListener("click",()=>setFocusMode(focusMode==="board"?null:"board"));
+listFocusButton.addEventListener("click",()=>setFocusMode(focusMode==="list"?null:"list"));
+notesFocusButton.addEventListener("click",()=>setFocusMode(focusMode==="notes"?null:"notes"));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && focusMode) setFocusMode(null); });
 function snapshot(){
   history.push(JSON.stringify(S.scene));
   if(history.length>60) history.shift();
@@ -1053,6 +1146,83 @@ function clip(g,s,max){
 }
 function nodeColor(n){ const t=typeOf(nodeTypeId(n)); return t?t.color:"#868e96"; }
 
+/* Category cards keep only a type id and their board position. Names, colours,
+   and concepts always come from the same live data as the right-hand list. */
+const CARD_W=260, CARD_HEAD_H=53, CARD_ROW_H=24, CARD_VISIBLE_ROWS=9;
+const categoryCards = () => S.scene.categoryCards || [];
+const cardItems = card => S.concepts.filter(c=>c.type===card.typeId);
+function cardConceptAt(card,y){
+  if(!card.expanded) return null;
+  const row=Math.floor((y-card.y-CARD_HEAD_H-4)/CARD_ROW_H);
+  if(row<0 || row>=CARD_VISIBLE_ROWS) return null;
+  return cardItems(card)[(card.scroll||0)+row] || null;
+}
+function cardRect(card){
+  const count=cardItems(card).length;
+  return {x:card.x,y:card.y,w:CARD_W,
+          h:card.expanded ? CARD_HEAD_H+Math.max(1,Math.min(count,CARD_VISIBLE_ROWS))*CARD_ROW_H+12 : CARD_HEAD_H};
+}
+function boardEndpoint(id){
+  const node=S.scene.nodes.find(n=>n.id===id);
+  if(node) return {kind:"node",x:node.x,y:node.y,rect:nodeRect(node),label:nodeLabel(node)};
+  const card=categoryCards().find(c=>c.id===id);
+  const type=card && typeOf(card.typeId);
+  if(!type) return null;
+  return {kind:"category",x:card.x+CARD_W/2,y:card.y+CARD_HEAD_H/2,
+          rect:{x:card.x,y:card.y,w:CARD_W,h:CARD_HEAD_H},label:type.name};
+}
+const boardEndpointLabel = endpoint =>
+  endpoint.kind==="category" ? "Category: "+endpoint.label : endpoint.label;
+function paintCategoryCard(g,card){
+  const t=typeOf(card.typeId); if(!t) return;
+  const r=cardRect(card), items=cardItems(card);
+  const maxScroll=Math.max(0,items.length-CARD_VISIBLE_ROWS);
+  card.scroll=Math.max(0,Math.min(card.scroll||0,maxScroll));
+  g.save();
+  g.shadowColor="rgba(23,33,50,.10)"; g.shadowBlur=12; g.shadowOffsetY=3;
+  g.fillStyle="#fff"; g.strokeStyle=(selected&&selected.kind==="category"&&selected.id===card.id)?"#2f6df6":"#dce2e9";
+  g.lineWidth=(selected&&selected.kind==="category"&&selected.id===card.id)?2.4:1;
+  roundRect(g,r.x,r.y,r.w,r.h,9); g.fill(); g.stroke();
+  g.shadowColor="transparent"; g.shadowBlur=0; g.shadowOffsetY=0;
+  g.fillStyle=t.color; g.fillRect(r.x+1,r.y+9,4,r.h-18);
+  g.fillStyle=t.color; g.beginPath(); g.arc(r.x+20,r.y+20,5,0,Math.PI*2); g.fill();
+  g.fillStyle="#1c1f24"; g.font="700 13px system-ui,sans-serif"; g.textBaseline="middle";
+  g.fillText(clip(g,t.name,CARD_W-90),r.x+32,r.y+20);
+  g.fillStyle="#71787f"; g.font="11px system-ui,sans-serif";
+  g.fillText(items.length+" concept"+(items.length===1?"":"s"),r.x+19,r.y+40);
+  g.fillStyle="#5c6672"; g.font="15px system-ui,sans-serif";
+  g.fillText(card.expanded?"▴":"▾",r.x+r.w-25,r.y+25);
+  if(linkFrom===card.id){
+    g.strokeStyle="#2f6df6";g.lineWidth=2;g.setLineDash([4,3]);
+    roundRect(g,r.x-4,r.y-4,r.w+8,CARD_HEAD_H+8,10);g.stroke();g.setLineDash([]);
+  }
+  if(card.expanded){
+    g.strokeStyle="#eef0f3"; g.lineWidth=1;
+    g.beginPath();g.moveTo(r.x+12,r.y+CARD_HEAD_H);g.lineTo(r.x+r.w-12,r.y+CARD_HEAD_H);g.stroke();
+    g.beginPath();g.rect(r.x+9,r.y+CARD_HEAD_H+3,r.w-18,r.h-CARD_HEAD_H-8);g.clip();
+    if(!items.length){
+      g.fillStyle="#8a929b";g.font="11px system-ui,sans-serif";
+      g.fillText("No concepts yet",r.x+19,r.y+CARD_HEAD_H+18);
+    } else {
+      items.slice(card.scroll,card.scroll+CARD_VISIBLE_ROWS).forEach((c,i)=>{
+        const cy=r.y+CARD_HEAD_H+16+i*CARD_ROW_H;
+        g.fillStyle=t.color;g.beginPath();g.arc(r.x+20,cy,3,0,Math.PI*2);g.fill();
+        g.fillStyle="#333a43";g.font="12px system-ui,sans-serif";
+        g.fillText(clip(g,c.label,CARD_W-68),r.x+31,cy);
+        if((c.annotation||"").trim()){
+          g.fillStyle="#2f6df6";g.beginPath();g.arc(r.x+r.w-22,cy,3,0,Math.PI*2);g.fill();
+        }
+      });
+      if(maxScroll){
+        const trackH=r.h-CARD_HEAD_H-15, thumbH=Math.max(20,trackH*CARD_VISIBLE_ROWS/items.length);
+        const thumbY=r.y+CARD_HEAD_H+7+(trackH-thumbH)*(card.scroll/maxScroll);
+        g.fillStyle="#d2d8e0";roundRect(g,r.x+r.w-10,thumbY,3,thumbH,1.5);g.fill();
+      }
+    }
+  }
+  g.restore();
+}
+
 function render(target){
   const g=target||ctx;
   g.save(); g.clearRect(0,0,CW,CH);
@@ -1063,13 +1233,13 @@ function render(target){
 
   g.lineCap="round";
   S.scene.links.forEach(l=>{
-    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
+    const a=boardEndpoint(l.from), b=boardEndpoint(l.to);
     if(!a||!b) return;
     const doomed = (hoverLink===l.id);
     const linkCol = doomed ? "#d64545" : "#adb5bd";
     g.strokeStyle=linkCol; g.lineWidth = doomed ? 3.2 : 1.6;
     g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke();
-    const ang=Math.atan2(b.y-a.y,b.x-a.x), rb=nodeRect(b);
+    const ang=Math.atan2(b.y-a.y,b.x-a.x), rb=b.rect;
     const t=Math.min(Math.abs((rb.w/2)/Math.cos(ang))||999, Math.abs((rb.h/2)/Math.sin(ang))||999);
     const ex=b.x-Math.cos(ang)*t, ey=b.y-Math.sin(ang)*t;
     g.fillStyle=linkCol; g.beginPath(); g.moveTo(ex,ey);
@@ -1078,7 +1248,7 @@ function render(target){
     g.closePath(); g.fill();
   });
   if(linkGesture && linkGesture.moved){
-    const a=S.scene.nodes.find(n=>n.id===linkGesture.from), b=linkGesture.current;
+    const a=boardEndpoint(linkGesture.from), b=linkGesture.current;
     if(a&&b){
       g.strokeStyle="#2f6df6"; g.lineWidth=2; g.setLineDash([6,4]);
       g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); g.setLineDash([]);
@@ -1091,6 +1261,7 @@ function render(target){
     for(let i=1;i<s.pts.length;i++) g.lineTo(s.pts[i].x,s.pts[i].y);
     g.stroke();
   });
+  categoryCards().forEach(card=>paintCategoryCard(g,card));
   S.scene.nodes.forEach(n=>{
     const m=measureNode(n), r=nodeRect(n), col=nodeColor(n);
     g.fillStyle="#fff"; g.strokeStyle=col;
@@ -1100,6 +1271,10 @@ function render(target){
     g.fillStyle="#1c1f24"; g.font=NODE_FONT; g.textBaseline="middle";
     const top=n.y-((m.lines.length-1)*NODE_LINEH)/2;
     m.lines.forEach((ln,i)=>g.fillText(ln, r.x+22, top+i*NODE_LINEH+1));
+    const concept=conceptOf(n);
+    if(concept && (concept.annotation||"").trim()){
+      g.fillStyle="#2f6df6";g.beginPath();g.arc(r.x+r.w-9,r.y+9,3,0,Math.PI*2);g.fill();
+    }
     if(linkFrom===n.id){
       g.strokeStyle="#2f6df6"; g.lineWidth=2; g.setLineDash([4,3]);
       roundRect(g,r.x-4,r.y-4,r.w+8,r.h+8,10); g.stroke(); g.setLineDash([]);
@@ -1115,7 +1290,7 @@ function render(target){
   });
   g.restore();
   const si=document.getElementById("selInfo");
-  if(si) si.textContent=S.scene.nodes.length+" nodes · "+S.scene.links.length+" links";
+  if(si) si.textContent=S.scene.nodes.length+" nodes · "+categoryCards().length+" categories · "+S.scene.links.length+" links";
   if(!target && typeof paintNodeType==="function") paintNodeType();
 }
 function hit(x,y){
@@ -1129,13 +1304,24 @@ function hit(x,y){
     const w=ctx.measureText(t.text).width, h=13+t.size*2;
     if(x>=t.x-3&&x<=t.x+w+3&&y>=t.y-3&&y<=t.y+h+3) return {kind:"text",id:t.id,obj:t};
   }
+  for(let i=categoryCards().length-1;i>=0;i--){
+    const card=categoryCards()[i],r=cardRect(card);
+    if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)
+      return {kind:"category",id:card.id,obj:card,toggle:y<=r.y+CARD_HEAD_H&&x>=r.x+r.w-42};
+  }
   return null;
 }
 const pos = e => { const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
-function connectNodes(from,to){
+const canConnectHit = h => h && (h.kind==="node" || h.kind==="category");
+function connectItems(from,to){
   if(!from || !to || from===to) return false;
+  const a=boardEndpoint(from), b=boardEndpoint(to);
+  if(!a || !b) return false;
+  if(a.kind==="category" && b.kind==="category"){
+    toast("Connect a category to a concept node"); return false;
+  }
   if(S.scene.links.some(l=>l.from===from && l.to===to)){
-    toast("These concepts are already connected"); return false;
+    toast("These board objects are already connected"); return false;
   }
   snapshot(); S.scene.links.push({id:nid("l"),from,to});
   persist(); toast("Connected"); return true;
@@ -1155,19 +1341,28 @@ cv.addEventListener("pointerdown", e=>{
     render(); openEditor(t,"text"); persist(); return;
   }
   if(tool==="link"){
-    if(h && h.kind==="node"){
+    if(canConnectHit(h)){
       if(linkFrom && linkFrom!==h.id){
-        connectNodes(linkFrom,h.id); linkFrom=null; linkGesture=null;
+        connectItems(linkFrom,h.id); linkFrom=null; linkGesture=null;
       } else {
         linkFrom=h.id;
         linkGesture={from:h.id,start:p,current:p,moved:false};
-        toast("Click another node, or drag to it");
+        toast("Click or drag to a concept or category card");
       }
     } else { linkFrom=null; linkGesture=null; }
     render(); return;
   }
+  if(h && h.kind==="category" && h.toggle){
+    snapshot(); h.obj.expanded=!h.obj.expanded; h.obj.scroll=0;
+    selected={kind:"category",id:h.id}; render(); persist(); return;
+  }
   selected = h ? {kind:h.kind,id:h.id} : null;
-  if(h){ snapshot(); drag={kind:h.kind,id:h.id,dx:p.x-h.obj.x,dy:p.y-h.obj.y}; }
+  if(h){
+    const source=h.kind==="node" ? conceptOf(h.obj) :
+                 h.kind==="category" ? cardConceptAt(h.obj,p.y) : null;
+    snapshot(); drag={kind:h.kind,id:h.id,dx:p.x-h.obj.x,dy:p.y-h.obj.y,
+                     startX:h.obj.x,startY:h.obj.y,noteConceptId:source?source.id:null};
+  }
   render();
 });
 cv.addEventListener("pointermove", e=>{
@@ -1193,17 +1388,38 @@ cv.addEventListener("pointermove", e=>{
   }
   if(drag){
     const o = drag.kind==="node" ? S.scene.nodes.find(n=>n.id===drag.id)
-                                 : S.scene.texts.find(t=>t.id===drag.id);
+            : drag.kind==="category" ? categoryCards().find(c=>c.id===drag.id)
+            : S.scene.texts.find(t=>t.id===drag.id);
     if(o){ o.x=p.x-drag.dx; o.y=p.y-drag.dy; render(); }
+    noteEl.classList.toggle("concept-drop",!!drag.noteConceptId && pointInNotes(e.clientX,e.clientY));
   }
 });
+cv.addEventListener("wheel",e=>{
+  const p=pos(e),h=hit(p.x,p.y);
+  if(!h || h.kind!=="category" || !h.obj.expanded) return;
+  const max=Math.max(0,cardItems(h.obj).length-CARD_VISIBLE_ROWS);
+  if(!max) return;
+  e.preventDefault();
+  h.obj.scroll=Math.max(0,Math.min(max,(h.obj.scroll||0)+(e.deltaY>0?1:-1)));
+  render(); persist();
+},{passive:false});
 function endPointer(e){
   if(drawing){ drawing=null; persist(); }
-  if(drag){ drag=null; persist(); }
+  if(drag){
+    if(e.type==="pointerup" && drag.noteConceptId && pointInNotes(e.clientX,e.clientY)){
+      const placed=drag.kind==="node" ? S.scene.nodes.find(x=>x.id===drag.id) :
+                   categoryCards().find(x=>x.id===drag.id);
+      if(placed){ placed.x=drag.startX; placed.y=drag.startY; }
+      insertConceptIntoNotes(S.concepts.find(c=>c.id===drag.noteConceptId));
+      render();
+    }
+    noteEl.classList.remove("concept-drop");
+    drag=null; persist();
+  }
   if(linkGesture){
     if(linkGesture.moved){
       const p=pos(e), h=hit(p.x,p.y);
-      if(h && h.kind==="node" && h.id!==linkGesture.from) connectNodes(linkGesture.from,h.id);
+      if(canConnectHit(h) && h.id!==linkGesture.from) connectItems(linkGesture.from,h.id);
       linkFrom=null;
     }
     linkGesture=null; render();
@@ -1217,7 +1433,13 @@ function endPointer(e){
 cv.addEventListener("pointerup", endPointer);
 cv.addEventListener("pointerleave", ()=>{ if(hoverLink){ hoverLink=null; render(); } });
 cv.addEventListener("pointercancel", endPointer);
-cv.addEventListener("dblclick", e=>{ const p=pos(e), h=hit(p.x,p.y); if(h) openEditor(h.obj,h.kind); });
+cv.addEventListener("dblclick", e=>{
+  const p=pos(e), h=hit(p.x,p.y);
+  if(!h) return;
+  if(h.kind==="node") openAnnotation(conceptOf(h.obj));
+  else if(h.kind==="category") openAnnotation(cardConceptAt(h.obj,p.y));
+  else openEditor(h.obj,h.kind);
+});
 
 const ERASE_R=12;          /* how close a click has to be to a pen stroke */
 const LINK_HIT=14;         /* arrows are one pixel wide, so aim a little wider */
@@ -1237,7 +1459,7 @@ function distToSegment(p,a,b){
 function linkNear(p){
   let best=null, bestD=LINK_HIT;
   S.scene.links.forEach(l=>{
-    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
+    const a=boardEndpoint(l.from), b=boardEndpoint(l.to);
     if(!a||!b) return;
     const d=distToSegment(p,a,b);
     if(d<=bestD){ bestD=d; best=l; }
@@ -1264,6 +1486,11 @@ function removeItem(h){
     S.scene.nodes=S.scene.nodes.filter(x=>x.id!==h.id);
     S.scene.links=S.scene.links.filter(l=>l.from!==h.id&&l.to!==h.id);
     if(label) toast("Removed “"+label+"” from the board — still in the concept list");
+  } else if(h.kind==="category"){
+    S.scene.categoryCards=categoryCards().filter(c=>c.id!==h.id);
+    S.scene.links=S.scene.links.filter(l=>l.from!==h.id&&l.to!==h.id);
+    if(linkFrom===h.id) linkFrom=null;
+    toast("Category card removed from the board — the category remains in the list");
   } else S.scene.texts=S.scene.texts.filter(t=>t.id!==h.id);
   selected=null;
 }
@@ -1301,6 +1528,50 @@ editor.addEventListener("keydown", e=>{
 });
 editor.addEventListener("blur", ()=>closeEditor(true));
 
+/* An annotation belongs to the concept, not to its list row or board placement. */
+const annotationBackdrop=document.getElementById("annotationBackdrop");
+const annotationName=document.getElementById("annotationName");
+const annotationText=document.getElementById("annotationText");
+let editingConceptId=null, annotationReturnFocus=null;
+function openAnnotation(concept){
+  if(!concept) return;
+  editingConceptId=concept.id;
+  annotationReturnFocus=document.activeElement;
+  annotationName.value=concept.label;
+  annotationText.value=concept.annotation||"";
+  annotationBackdrop.hidden=false;
+  annotationText.focus();
+}
+function closeAnnotation(save){
+  if(annotationBackdrop.hidden) return;
+  const concept=S.concepts.find(c=>c.id===editingConceptId);
+  if(save && concept){
+    const name=annotationName.value.trim()||concept.label;
+    const note=annotationText.value.trim();
+    if(name!==concept.label || note!==(concept.annotation||"")){
+      concept.label=name;
+      concept.annotation=note;
+      persist(); renderRight();
+    }
+  }
+  annotationBackdrop.hidden=true;
+  editingConceptId=null;
+  if(annotationReturnFocus && annotationReturnFocus.isConnected) annotationReturnFocus.focus();
+  annotationReturnFocus=null;
+}
+document.getElementById("annotationSave").addEventListener("click",()=>closeAnnotation(true));
+document.getElementById("annotationCancel").addEventListener("click",()=>closeAnnotation(false));
+annotationBackdrop.addEventListener("keydown",e=>{
+  e.stopPropagation();
+  if(e.key==="Escape"){ e.preventDefault(); closeAnnotation(false); }
+  else if((e.metaKey||e.ctrlKey) && e.key==="Enter"){
+    e.preventDefault(); closeAnnotation(true);
+  }
+  else if(e.key==="Enter" && e.target===annotationName){
+    e.preventDefault(); closeAnnotation(true);
+  }
+});
+
 function placeNode(concept, x, y){
   if(!concept) return null;
   const existing=S.scene.nodes.find(n=>n.cid===concept.id);
@@ -1336,6 +1607,21 @@ function placeNode(concept, x, y){
   S.scene.nodes.push(n); selected={kind:"node",id:n.id};
   render(); persist(); renderRight(); return n;
 }
+function placeCategoryCard(type,x,y){
+  if(!type) return null;
+  const existing=categoryCards().find(c=>c.typeId===type.id);
+  if(existing){
+    selected={kind:"category",id:existing.id}; render();
+    toast("“"+type.name+"” is already on the board"); return existing;
+  }
+  snapshot();
+  const card={id:nid("card"),typeId:type.id,
+              x:Math.max(0,(x==null?CW/2:x)-CARD_W/2),
+              y:Math.max(0,(y==null?CH/2:y)-CARD_HEAD_H/2),
+              expanded:false,scroll:0};
+  S.scene.categoryCards=categoryCards().concat(card);
+  selected={kind:"category",id:card.id}; render(); persist(); return card;
+}
 /* Sketching a brand-new concept on the board adds it to the concept list too,
    so nothing a student thinks of on the canvas escapes the ontology. */
 function addConceptNode(label, x, y){
@@ -1348,9 +1634,11 @@ wrap.addEventListener("dragover", e=>{ e.preventDefault(); wrap.classList.add("d
 wrap.addEventListener("dragleave", ()=>wrap.classList.remove("dragover"));
 wrap.addEventListener("drop", e=>{
   e.preventDefault(); wrap.classList.remove("dragover");
+  const r=cv.getBoundingClientRect();
+  const t=typeOf(e.dataTransfer.getData("text/category-id"));
+  if(t){ placeCategoryCard(t,e.clientX-r.left,e.clientY-r.top); return; }
   const c=S.concepts.find(c=>c.id===e.dataTransfer.getData("text/concept-id"));
   if(!c) return;
-  const r=cv.getBoundingClientRect();
   placeNode(c, e.clientX-r.left, e.clientY-r.top);
 });
 
@@ -1404,7 +1692,7 @@ document.getElementById("bRedo").addEventListener("click",redo);
 document.getElementById("bAddNode").addEventListener("click",()=>openEditor(addConceptNode("New concept"),"node"));
 document.getElementById("bClear").addEventListener("click",function(){
   twoStep(this,"Clear it?",()=>{
-    snapshot(); S.scene={strokes:[],nodes:[],texts:[],links:[]};
+    snapshot(); S.scene={strokes:[],nodes:[],texts:[],links:[],categoryCards:[]};
     selected=null; render(); persist(); renderRight(); toast("Board cleared — Ctrl+Z to undo");
   });
 });
@@ -1481,7 +1769,7 @@ function conceptRow(c,opts){
   li.draggable=true;
   li.addEventListener("dragstart", e=>{
     e.dataTransfer.setData("text/concept-id", c.id);
-    e.dataTransfer.setData("text/plain", c.label);
+    e.dataTransfer.setData("text/plain", conceptNoteText(c));
     e.dataTransfer.effectAllowed=(opts.reorderable||opts.categoryMovable)?"copyMove":"copy";
     conceptDraggingId=c.id;
     if(opts.reorderable||opts.categoryMovable) li.classList.add("dragging");
@@ -1507,14 +1795,14 @@ function conceptRow(c,opts){
       if(opts.categoryMovable && moved){ moved.type=c.type||null; moved.sub=c.sub||null; }
       if(moved && opts.favZone!==undefined) moved.fav = opts.favZone;   /* dropped above or below the line */
       if(moveRawConcept(conceptDraggingId,c.id,after)){
-        persist(); opts.categoryMovable?renderRight():renderRaw();
+        persist(); opts.categoryMovable?renderRight():renderRaw(); render();
       }
       conceptDraggingId=null; clearConceptDropMarks();
     });
   }
-  li.addEventListener("dblclick", ()=>{
-    if(lbl.isContentEditable) return;
-    placeNode(c);
+  li.addEventListener("dblclick", e=>{
+    if(lbl.isContentEditable || e.target.closest("button,input,select,.acts")) return;
+    openAnnotation(c);
   });
 
   if(opts.showStar){
@@ -1534,7 +1822,7 @@ function conceptRow(c,opts){
 
   const lbl=document.createElement("span");
   lbl.className="lbl"; lbl.textContent=c.label;
-  lbl.title="Double-click the row → add to board  /  ✎ → rename";
+  lbl.title="Double-click to annotate / use + to add to board / ✎ to rename";
   function startEdit(){
     lbl.contentEditable="true"; lbl.focus();
     const sel=document.getSelection(); sel.removeAllRanges();
@@ -1551,6 +1839,12 @@ function conceptRow(c,opts){
     if(v && v!==c.label){ c.label=v; persist(); renderRight(); } else lbl.textContent=c.label;
   });
   li.appendChild(lbl);
+
+  if((c.annotation||"").trim()){
+    const note=document.createElement("span"); note.className="annotationMark";
+    note.textContent="note"; note.title="This concept has an annotation";
+    li.appendChild(note);
+  }
 
   if(!opts.hideCat){
     const cat=document.createElement("span");
@@ -1653,7 +1947,7 @@ rawPane.addEventListener("drop",e=>{
   if(from>=0){
     const moved=S.concepts.splice(from,1)[0];
     moved.fav=false;                       /* dropped below the line */
-    S.concepts.push(moved); persist(); renderRaw();
+    S.concepts.push(moved); persist(); renderRaw(); render();
   }
   conceptDraggingId=null; clearConceptDropMarks();
 });
@@ -1694,6 +1988,14 @@ function renderCats(){
     blk.className="typeBlock"+(S.closedTypes[t.id]?" closed":"");
 
     const head=document.createElement("div"); head.className="typeHead";
+    head.draggable=true;
+    head.title="Drag this category to the board";
+    head.addEventListener("dragstart",e=>{
+      if(e.target.closest("button") || e.target.isContentEditable){ e.preventDefault(); return; }
+      e.dataTransfer.setData("text/category-id",t.id);
+      e.dataTransfer.setData("text/plain",t.name);
+      e.dataTransfer.effectAllowed="copy";
+    });
     const arrow=document.createElement("span");
     arrow.className="arrow"; arrow.textContent=S.closedTypes[t.id]?"▶":"▼";
     arrow.addEventListener("click",()=>{ S.closedTypes[t.id]=!S.closedTypes[t.id]; persist(); renderRight(); });
@@ -1705,7 +2007,7 @@ function renderCats(){
     head.appendChild(dot);
 
     const nm=document.createElement("span"); nm.className="name"; nm.textContent=t.name;
-    nm.title="Click to rename this type";
+    nm.title="Click to rename, or drag to the board";
     nm.addEventListener("click",e=>{
       e.stopPropagation();
       if(nm.isContentEditable) return;
@@ -1719,7 +2021,7 @@ function renderCats(){
     nm.addEventListener("blur",()=>{
       nm.contentEditable="false";
       const v=nm.textContent.trim();
-      if(v && v!==t.name){ t.name=v; persist(); renderRight(); } else nm.textContent=t.name;
+      if(v && v!==t.name){ t.name=v; persist(); render(); renderRight(); } else nm.textContent=t.name;
     });
     head.appendChild(nm);
 
@@ -1736,8 +2038,12 @@ function renderCats(){
         S.concepts.forEach(c=>{ if(c.type===t.id){ c.type=null; c.sub=null; } });
         S.subs=S.subs.filter(x=>x.type!==t.id);
         S.types=S.types.filter(x=>x.id!==t.id);
+        const removedCardIds=new Set(categoryCards().filter(c=>c.typeId===t.id).map(c=>c.id));
+        S.scene.categoryCards=categoryCards().filter(c=>c.typeId!==t.id);
+        S.scene.links=S.scene.links.filter(l=>!removedCardIds.has(l.from)&&!removedCardIds.has(l.to));
+        if(removedCardIds.has(linkFrom)) linkFrom=null;
         S.ont.forEach(r=>{ delete r[t.id]; });
-        persist(); renderRight();
+        persist(); render(); renderRight();
       });
     });
     tdel.classList.add("del"); head.appendChild(tdel);
@@ -1963,10 +2269,20 @@ function renderOnt(){
 }
 document.getElementById("bAddOntRow").addEventListener("click",()=>{ S.ont.push(blankOntRow()); persist(); renderOnt(); });
 
+function renderDatasetSelect(){
+  const sel=document.getElementById("sessionSelect");
+  const datasets=datasetsFor(S);
+  sel.replaceChildren(...datasets.map(d=>{
+    const option=document.createElement("option");
+    option.value=d.id; option.textContent=d.name;
+    return option;
+  }));
+  sel.value=S.activeSession||"session1";
+}
 function renderRight(){
-  document.getElementById("sessionSelect").value=S.activeSession||"session1";
+  renderDatasetSelect();
   document.getElementById("search").placeholder=
-    "Search "+(SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name+" concepts…";
+    "Search "+datasetName(S.activeSession)+" concepts…";
   renderRaw(); renderCats(); renderCausal(); renderOnt();
 
   const sel=document.getElementById("newRawCat");
@@ -1989,6 +2305,7 @@ function renderRight(){
   });
   opt("__all__","All concepts ("+activeConcepts().length+")");
   if(keep2) seed.value=keep2;
+  render(); // Keep board category cards current after any list edit.
 }
 
 document.querySelectorAll(".tab").forEach(t=>{
@@ -2005,6 +2322,39 @@ document.getElementById("sessionSelect").addEventListener("change",e=>{
   document.getElementById("search").value="";
   selected=null;
   persist(); render(); renderRight();
+});
+const datasetAddRow=document.getElementById("datasetAddRow");
+const newDatasetName=document.getElementById("newDatasetName");
+document.getElementById("bAddDataset").addEventListener("click",()=>{
+  let n=1;
+  while(datasetsFor(S).some(d=>d.name.toLowerCase()===("My Dataset "+n).toLowerCase())) n++;
+  newDatasetName.value="My Dataset "+n;
+  datasetAddRow.hidden=false;
+  newDatasetName.focus(); newDatasetName.select();
+});
+function createDataset(){
+  const name=newDatasetName.value.trim();
+  if(!name){ newDatasetName.focus(); return; }
+  if(datasetsFor(S).some(d=>d.name.toLowerCase()===name.toLowerCase())){
+    toast("A dataset with this name already exists"); newDatasetName.focus(); return;
+  }
+  const id=nid("dataset");
+  S.customDatasets.push({id,name});
+  S.activeSession=id;
+  pendingAdd=null; pendingSubType=null; pendingColor=null;
+  document.getElementById("search").value="";
+  selected=null;
+  datasetAddRow.hidden=true;
+  persist(); renderRight();
+  document.getElementById("sessionSelect").focus();
+  toast("Created empty dataset “"+name+"”");
+}
+document.getElementById("bCreateDataset").addEventListener("click",createDataset);
+document.getElementById("bCancelDataset").addEventListener("click",()=>{ datasetAddRow.hidden=true; });
+newDatasetName.addEventListener("keydown",e=>{
+  e.stopPropagation();
+  if(e.key==="Enter"){ e.preventDefault(); createDataset(); }
+  if(e.key==="Escape"){ e.preventDefault(); datasetAddRow.hidden=true; }
 });
 document.getElementById("search").addEventListener("input",()=>{ renderRaw(); renderCats(); });
 
@@ -2054,8 +2404,51 @@ function updNoteCount(){
   const t=(S.notes||"").trim();
   document.getElementById("noteCount").textContent = t ? t.split(/\s+/).length+" words" : "";
 }
+function conceptNoteText(concept){
+  const annotation=String(concept.annotation||"").trim();
+  return concept.label+(annotation?"\n"+annotation:"");
+}
+function pointInNotes(x,y){
+  const r=noteEl.getBoundingClientRect();
+  return r.width>0 && x>=r.left && x<=r.right && y>=r.top && y<=r.bottom;
+}
+function insertConceptIntoNotes(concept){
+  if(!concept) return;
+  const original=noteEl.value;
+  const active=document.activeElement===noteEl;
+  const start=active?noteEl.selectionStart:original.length;
+  const end=active?noteEl.selectionEnd:original.length;
+  const before=original.slice(0,start), after=original.slice(end);
+  const leading=before ? (before.endsWith("\n\n")?"":before.endsWith("\n")?"\n":"\n\n") : "";
+  const trailing=after ? (after.startsWith("\n\n")?"":after.startsWith("\n")?"\n":"\n\n") : "";
+  noteEl.setRangeText(leading+conceptNoteText(concept)+trailing,start,end,"end");
+  noteEl.dispatchEvent(new Event("input",{bubbles:true}));
+  noteEl.focus();
+}
+const hasConceptDrag=e=>!!conceptDraggingId ||
+  !!(e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes("text/concept-id"));
+noteEl.addEventListener("dragenter",e=>{ if(hasConceptDrag(e)) noteEl.classList.add("concept-drop"); });
+noteEl.addEventListener("dragover",e=>{
+  if(!hasConceptDrag(e)) return;
+  e.preventDefault(); e.dataTransfer.dropEffect="copy";
+  noteEl.classList.add("concept-drop");
+});
+noteEl.addEventListener("dragleave",()=>noteEl.classList.remove("concept-drop"));
+noteEl.addEventListener("drop",e=>{
+  noteEl.classList.remove("concept-drop");
+  const id=e.dataTransfer.getData("text/concept-id") || conceptDraggingId;
+  const concept=S.concepts.find(c=>c.id===id);
+  if(!concept) return;
+  e.preventDefault(); e.stopPropagation();
+  insertConceptIntoNotes(concept);
+});
 noteEl.addEventListener("input",()=>{ S.notes=noteEl.value; updNoteCount(); persist(); });
-noteEl.addEventListener("keydown",e=>e.stopPropagation());
+noteEl.addEventListener("keydown",e=>{
+  if(e.key==="Escape" && focusMode==="notes"){
+    e.preventDefault(); setFocusMode(null);
+  }
+  e.stopPropagation();
+});
 document.getElementById("bNoteToggle").addEventListener("click",()=>{
   S.noteOpen=(S.noteOpen===false); applyNotes(); persist(); resizeCanvas();
 });
@@ -2073,7 +2466,7 @@ document.getElementById("bNoteToggle").addEventListener("click",()=>{
 /* =========================================================
    4. Versions — one snapshot per ontologizing session
    ========================================================= */
-const SNAP_KEYS=["activeSession","meta","types","subs","concepts","causal","ont","scene","notes"];
+const SNAP_KEYS=["activeSession","customDatasets","meta","types","subs","concepts","causal","ont","scene","notes"];
 const grabSnap = () => { const o={}; SNAP_KEYS.forEach(k=>o[k]=JSON.parse(JSON.stringify(S[k]))); return o; };
 const putSnap  = sn => SNAP_KEYS.forEach(k=>{ if(sn[k]!==undefined) S[k]=JSON.parse(JSON.stringify(sn[k])); });
 
@@ -2228,11 +2621,12 @@ function ontTableHTML(){
 }
 function conceptTableHTML(){
   let h='<table '+TBL+'><tr><th '+TH+'>Type</th><th '+TH+'>Subtype</th><th '+TH+'>Concept</th>'+
-        '<th '+TH+'>Source</th><th '+TH+'>On board</th></tr>';
+        '<th '+TH+'>Annotation</th><th '+TH+'>Source</th><th '+TH+'>On board</th></tr>';
   activeConcepts().forEach(c=>{
     const t=typeOf(c.type), sb=c.sub?subOf(c.sub):null;
     h+='<tr><td>'+esc(t?t.name:"(uncategorized)")+'</td><td>'+esc(sb?sb.name:"")+'</td><td>'+
-       esc(c.label)+'</td><td>'+(c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td></tr>';
+       esc(c.label)+'</td><td>'+nl2br(c.annotation||"")+'</td><td>'+
+       (c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td></tr>';
   });
   return h+'</table>';
 }
@@ -2246,8 +2640,8 @@ function causalTableHTML(){
 function linkTableHTML(){
   let h='<table '+TBL+'><tr><th '+TH+'>From</th><th '+TH+'>To</th></tr>';
   S.scene.links.forEach(l=>{
-    const a=S.scene.nodes.find(n=>n.id===l.from), b=S.scene.nodes.find(n=>n.id===l.to);
-    if(a&&b) h+='<tr><td>'+esc(nodeLabel(a))+'</td><td>'+esc(nodeLabel(b))+'</td></tr>';
+    const a=boardEndpoint(l.from), b=boardEndpoint(l.to);
+    if(a&&b) h+='<tr><td>'+esc(boardEndpointLabel(a))+'</td><td>'+esc(boardEndpointLabel(b))+'</td></tr>';
   });
   return h+'</table>';
 }
@@ -2261,6 +2655,37 @@ function notesTableHTML(){
   (S.notes||"").split("\n").forEach(r=>{ h+='<tr><td>'+esc(r)+'</td></tr>'; });
   return h+'</table>';
 }
+/* Count student-facing objects, not every internal JavaScript object. A concept
+   remains one ontology object even when it also has a placement on the board. */
+function objectCounts(){
+  const types=visibleTypes(), typeIds=new Set(types.map(t=>t.id));
+  const concepts=activeConcepts().length;
+  const categories=types.length;
+  const subcategories=S.subs.filter(s=>typeIds.has(s.type)).length;
+  const scene=S.scene;
+  return {
+    ontology:{concepts,categories,subcategories,total:concepts+categories+subcategories},
+    board:{conceptNodes:scene.nodes.length,categoryCards:categoryCards().length,
+           connections:scene.links.length,textNotes:scene.texts.length,drawnStrokes:scene.strokes.length}
+  };
+}
+function objectCountTableHTML(){
+  const counts=objectCounts();
+  const row=(label,count)=>'<tr><td>'+esc(label)+'</td><td align="right" style="mso-number-format:\'0\'">'+count+'</td></tr>';
+  let h='<table '+TBL+'><tr><th '+TH+'>Current dataset: ontology objects</th><th '+TH+'>Count</th></tr>';
+  h+=row('Concepts',counts.ontology.concepts);
+  h+=row('Categories shown in the Categories tab',counts.ontology.categories);
+  h+=row('Subcategories',counts.ontology.subcategories);
+  h+='<tr><th '+TH+'>Total ontology objects</th><th '+TH+' align="right">'+counts.ontology.total+'</th></tr></table>';
+  h+='<p style="font-family:Calibri,sans-serif;font-size:10pt">Each concept entry counts once, including repeated names. Board placements do not increase this total.</p>';
+  h+='<table '+TBL+'><tr><th '+TH+'>Shared board elements (all datasets)</th><th '+TH+'>Count</th></tr>';
+  h+=row('Concept node placements',counts.board.conceptNodes);
+  h+=row('Category cards',counts.board.categoryCards);
+  h+=row('Connections',counts.board.connections);
+  h+=row('Text notes',counts.board.textNotes);
+  h+=row('Drawn strokes',counts.board.drawnStrokes);
+  return h+'</table>';
+}
 function wordBlob(tag){
   const head='<html xmlns:o="urn:schemas-microsoft-com:office:office" '+
     'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
@@ -2270,7 +2695,7 @@ function wordBlob(tag){
   const body='<h1>Problem-solving Ontology</h1>'+
     '<p><b>Student:</b> '+esc(S.meta.name||"-")+'<br>'+
     '<b>Core problem:</b> '+esc(S.meta.title||"-")+'<br>'+
-    '<b>Dataset:</b> '+esc((SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name)+'<br>'+
+    '<b>Dataset:</b> '+esc(datasetName(S.activeSession))+'<br>'+
     (tag?'<b>Version:</b> '+esc(tag)+'<br>':'')+
     '<b>Exported:</b> '+new Date().toLocaleString("en-US")+'</p>'+
     '<h2>1. Ontology editor</h2>'+ontTableHTML()+
@@ -2290,17 +2715,18 @@ function xlsHeading(text){
 }
 function excelBlob(){
   const sections=[
-    ["1. Ontology editor",   ontTableHTML()],
-    ["2. Causal view",       causalTableHTML()],
-    ["3. Concept list",      conceptTableHTML()],
-    ["4. Board connections", linkTableHTML()],
-    ["5. Notes",             notesTableHTML()]
+    ["1. Object counts",     objectCountTableHTML()],
+    ["2. Ontology editor",   ontTableHTML()],
+    ["3. Causal view",       causalTableHTML()],
+    ["4. Concept list",      conceptTableHTML()],
+    ["5. Board connections", linkTableHTML()],
+    ["6. Notes",             notesTableHTML()]
   ];
   const head='<table border="0" cellspacing="0" cellpadding="4" '+
     'style="font-family:Calibri,sans-serif;font-size:10pt">'+
     '<tr><td><b>Student</b></td><td>'+esc(S.meta.name||"-")+'</td></tr>'+
     '<tr><td><b>Core problem</b></td><td>'+esc(S.meta.title||"-")+'</td></tr>'+
-    '<tr><td><b>Dataset</b></td><td>'+esc((SESSION_INFO.find(x=>x.id===S.activeSession)||SESSION_INFO[0]).name)+'</td></tr>'+
+    '<tr><td><b>Dataset</b></td><td>'+esc(datasetName(S.activeSession))+'</td></tr>'+
     '<tr><td><b>Exported</b></td><td>'+esc(new Date().toLocaleString("en-US"))+'</td></tr></table><br>';
   const html='<html xmlns:o="urn:schemas-microsoft-com:office:office" '+
     'xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'+
