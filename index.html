@@ -340,6 +340,7 @@
         <option value="session3">Aggregation Strategies</option>
         <option value="session4">Interaction Strategies</option>
         <option value="session5">Evolutionary strategies</option>
+        <option value="session6">Search Strategy</option>
       </select>
       <button class="btn" id="bAddDataset" title="Create an empty dataset">+ Dataset</button>
     </div>
@@ -463,7 +464,8 @@ const SESSION_INFO = [
   {id:"session2", name:"Information Processing Strategies"},
   {id:"session3", name:"Aggregation Strategies"},
   {id:"session4", name:"Interaction Strategies"},
-  {id:"session5", name:"Evolutionary strategies"}
+  {id:"session5", name:"Evolutionary strategies"},
+  {id:"session6", name:"Search Strategy"}
 ];
 const datasetsFor = state => SESSION_INFO.concat(Array.isArray(state.customDatasets)?state.customDatasets:[]);
 const datasetName = (id,state=S) =>
@@ -768,6 +770,73 @@ function session5Concepts(){
   });
 }
 
+/* Search Strategy concepts, supplied as a raw, uncategorized dataset. Exact
+   repeated source lines (such as "plans") remain separate concepts. */
+const SESSION6_GROUPS = [
+  ["environment", [
+    "node", "path", "search tree", "procedural complexity",
+    "complexity of executing plans/programs", "minimal effective procedure", "tasks",
+    "subtasks", "mental tasks", "physical tasks", "states", "possible states",
+    "unitary actor assumption", "open-ended world"
+  ]],
+  ["data", [
+    "memory", "infinite tape", "if-then rules/rules of thumb",
+    "models of the world/simplifications", "goal state represented in the initial state"
+  ]],
+  ["problem-solving processes", [
+    "sequence of actions", "planning", "plans", "heuristics", "search process",
+    "von Neumann search", "well-defined game", "Simon search", "understand and structure",
+    "an ill-defined problem", "mechanization of tasks", "programs", "algorithm", "plans",
+    "Turing machine operations", "logical rules", "state transitions", "search processes",
+    "initial state", "intermediate states", "goal state", "satisficing heuristic",
+    "brute force", "pruning the search tree", "breadth-first", "depth-first",
+    "search as a satisficing process", "satisfactory plans", "branches",
+    "economic utility functions", "game tree", "max/min", "back propagation",
+    "evaluation function", "pattern-matching", "generate-and-test", "expert learning",
+    "means-ends analysis", "heuristics as general manip. physical symbols", "operators",
+    "rules to transform symbols", "subgoaling methods/schemes", "model of expert search"
+  ]],
+  ["technologies/tools", [
+    "thinking machine", "Turing machine", "automaton"
+  ]],
+  ["cognitive assumptions", [
+    "limited processing capacity", "aspiration level", "ability to manipulate physical symbols"
+  ]],
+  ["organizational structure", [
+    "hierarchical div. of labor", "division of labor", "generalists", "specialists",
+    "collections of programs", "organizational goals", "multiple goals", "contradictory goals",
+    "organizational programs", "diverse interacting heuristic utility reward functions"
+  ]],
+  ["outcomes", [
+    "good enough/satisficing", "economizing on information processing capacity",
+    "efficient information processing", "gains to specialization", "easier to perform",
+    "easier to learn to perform", "learning/acquiring heuristics", "differences in states",
+    "subgoal states", "acquiring new heuristics"
+  ]],
+  ["settings", [
+    "solving algebraic expressions", "19th century industrial factories", "pin factory",
+    "chess, Go, backgammon", "Experts"
+  ]],
+  ["theories/people/places", [
+    "Adam Smith", "The Wealth of Nations", "Charles Babbage",
+    "fundamental AI-organizations analogy", "On the Economy of Machinery and Manufactures",
+    "Jacquard loom", "Alan Turing", "Demis Hassibis", "economists", "game theory",
+    "General Problem Solver (GPS)"
+  ]]
+];
+function session6Concepts(){
+  let i=0, h=0;
+  return SESSION6_GROUPS.flatMap(g=>{
+    const dup=g[1].some(l=>l.trim().toLowerCase()===g[0].trim().toLowerCase());
+    const head=dup ? [] : [{ id:"s6h_"+String(++h).padStart(3,"0"), label:g[0],
+                             type:null, sub:null, mine:false, session:"session6" }];
+    return head.concat(g[1].map(label=>({
+      id:"s6c_"+String(++i).padStart(3,"0"), label, type:null, sub:null,
+      mine:false, session:"session6"
+    })));
+  });
+}
+
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
 const STORE_KEY = "concept-explorer-v2";
 /* Keep one untouched copy of pre-dataset browser data. This uses a different
@@ -782,7 +851,7 @@ function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, 
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:11,
+    schema:12,
     activeSession:"session1",
     customDatasets:[],
     meta:{name:"", title:""},
@@ -790,7 +859,7 @@ function blankState(){
     subs: baseSubs(),
     concepts: SAMPLE.map(([type,sub,label])=>({
       id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null,
-      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts(),session5Concepts()),
+      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts(),session5Concepts(),session6Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
     scene:{strokes:[], nodes:[], texts:[], links:[], categoryCards:[]},
@@ -918,8 +987,9 @@ function addSession2Seed(d){ return seedSession(d, session2Concepts()); }
 function addSession3Seed(d){ return seedSession(d, session3Concepts()); }
 function addSession4Seed(d){ return seedSession(d, session4Concepts()); }
 function addSession5Seed(d){ return seedSession(d, session5Concepts()); }
+function addSession6Seed(d){ return seedSession(d, session6Concepts()); }
 function addDatasetSeeds(d){
-  return addSession5Seed(addSession4Seed(addSession3Seed(addSession2Seed(d))));
+  return addSession6Seed(addSession5Seed(addSession4Seed(addSession3Seed(addSession2Seed(d)))));
 }
 function removeDefaultSession2Categories(d){
   d.types=d.types||[]; d.concepts=d.concepts||[];
@@ -942,45 +1012,50 @@ function markLegacyAsSession1(d){
   return d;
 }
 function migrate(d){
-  if(d.schema===11) return markLegacyAsSession1(d);
+  if(d.schema===12) return markLegacyAsSession1(d);
+  if(d.schema===11){                /* add Search Strategy without touching existing work */
+    markLegacyAsSession1(d);
+    d.schema=12;
+    return addSession6Seed(d);
+  }
   if(d.schema===10){                /* add Evolutionary strategies without touching existing work */
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===9){                 /* add the Session 2 and 3 group headings */
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===8){                 /* add the group headings that were left out at first */
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===7){                 /* add the Session 4 dataset to work saved before it existed */
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===6){
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===5){
     markLegacyAsSession1(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);  /* Repair empty Session 2 and add Session 3. */
   }
   if(d.schema===4){
     markLegacyAsSession1(d);
     removeDefaultSession2Categories(d);
-    d.schema=11;
+    d.schema=12;
     return addDatasetSeeds(d);
   }
   if(d.schema===3){
-    d.schema=11;
+    d.schema=12;
     markLegacyAsSession1(d);
     return addDatasetSeeds(d);
   }
