@@ -2504,9 +2504,7 @@ function conceptRow(c,opts){
     if(e.target.closest("button,input,select,.acts,[contenteditable=true]"))return;
     if(e.ctrlKey||e.metaKey||e.shiftKey){e.preventDefault();selectConcept(c,e,false);}
     else{
-      if(selectedConceptIds.size||multiSelectMode){
-        selectedConceptIds.clear();selectedConceptIds.add(c.id);multiSelectMode=false;paintConceptSelection();
-      }
+      selectedConceptIds.clear();selectedConceptIds.add(c.id);multiSelectMode=false;paintConceptSelection();
       selectionAnchor=c.id;
     }
   });
