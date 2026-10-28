@@ -46,7 +46,7 @@
   #left{flex:1;min-width:320px;display:flex;flex-direction:column;background:var(--panel)}
   #grip{width:6px;cursor:col-resize;background:var(--line);flex:0 0 6px}
   #grip:hover{background:var(--accent)}
-  #right{width:440px;min-width:300px;max-width:760px;display:flex;flex-direction:column;
+  #right{width:440px;min-width:300px;max-width:calc(100vw - 326px);flex-shrink:0;display:flex;flex-direction:column;
          background:var(--panel);border-left:1px solid var(--line)}
   /* Focus modes change only the layout; the board, lists and saved work stay intact. */
   body.focus-board #top,body.focus-list #top,
@@ -124,10 +124,69 @@
                  max-width:150px;min-width:0}
 
   .clist{list-style:none;margin:0;padding:0}
+  /* Reflow against the panel width, including list focus mode. DOM order and
+     concept IDs stay unchanged, so reorder and saved data keep their meaning. */
+  #rawList,#favList,#catList{display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+    column-gap:12px;row-gap:2px;align-items:start}
+  #rawList>.empty,#favList>.empty{grid-column:1/-1}
+  #rawList.drop-at-end::after{grid-column:1/-1}
+  #rawList>.crow,#favList>.crow{min-width:0;position:relative;padding:4px 6px}
+  #catList>.typeBlock{min-width:0}
+  #listViewBar{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  #listViewBar .btn{font-size:11px;padding:5px 8px}
+  #rawList.outline-mode{display:grid}
+  .outline-children{list-style:none;margin:0;padding:4px 6px 6px 14px;border-left:2px solid var(--line2)}
+  .cluster-group{border:1px solid var(--cluster-color,var(--line));border-radius:8px;margin:6px 0;background:var(--panel);min-width:0}
+  .cluster-head{display:flex;align-items:center;gap:6px;padding:7px 8px;cursor:grab}
+  .cluster-head .cluster-name{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
+  .cluster-name[contenteditable=true]{outline:2px solid var(--accent-soft);cursor:text}
+  .cluster-color{width:19px;height:21px;padding:0;border:0;background:transparent;cursor:pointer;flex-shrink:0}
+  .cluster-size{font-size:10px;color:var(--muted)}
+  .outline-entry.drop-before{box-shadow:0 -2px 0 var(--accent)}
+  .outline-entry.drop-after{box-shadow:0 2px 0 var(--accent)}
+  .outline-entry.drop-inside{outline:2px solid var(--accent);background:var(--accent-soft)}
+  .outline-entry.drop-cluster{outline:2px dashed var(--accent);background:var(--accent-soft)}
+  .outline-entry.drop-cluster::after{content:'Create cluster…';color:var(--accent);font-size:11px;padding:2px 8px;pointer-events:none}
+  .outline-empty{padding:8px 10px;font-size:11px;color:var(--muted)}
+  #rawList .cat:empty{display:none}
+  #rawList .cat{max-width:95px}
   .crow{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid transparent;
         border-radius:6px;cursor:grab}
   .crow:hover{background:#f6f7f9;border-color:var(--line2)}
   .crow.used{background:#f0fbf4}
+  .crow.multi-selected{background:var(--accent-soft);border-color:var(--accent)}
+  #right.select-mode .crow{user-select:none}
+  #right.select-mode .lbl[contenteditable="true"]{user-select:text}
+  .concept-check{display:none;flex:0 0 auto;margin:0;cursor:pointer}
+  #right.select-mode .concept-check{display:block}
+  #selectionBar{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  #selectionCount{font-size:11px;color:var(--muted);margin-right:auto}
+  #selectionBar .btn{padding:5px 7px;font-size:11px}
+  #selectionBar .btn:disabled{display:none}
+  #storageWarning[hidden]{display:none}
+  #storageWarning{flex:0 0 auto;padding:10px 14px;background:#fff4e5;color:#713e00;
+    border-bottom:1px solid #edc58b;font-size:12px;line-height:1.5}
+  #storageWarning .btn{margin-left:8px}
+  #recoveryDialog{width:560px;max-width:calc(100vw - 32px);max-height:80vh;overflow:auto;
+    border:1px solid var(--line);border-radius:12px;padding:20px}
+  #recoveryDialog::backdrop{background:rgba(22,29,42,.38)}
+  .recoveryRow{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:10px 0;border-bottom:1px solid var(--line2);font-size:12px}
+  #conceptMenu[hidden],#clusterBackdrop[hidden]{display:none}
+  #conceptMenu{position:fixed;z-index:55;min-width:205px;padding:6px;background:var(--panel);
+    border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.16)}
+  #conceptMenu button{display:block;width:100%;text-align:left;padding:9px 10px;
+    border:0;border-radius:5px;background:transparent;color:var(--text)}
+  #conceptMenu button:hover,#conceptMenu button:focus{background:var(--accent-soft);outline:none}
+  #clusterBackdrop{position:fixed;inset:0;z-index:65;background:rgba(22,29,42,.38);
+    display:flex;align-items:center;justify-content:center;padding:16px}
+  #clusterDialog{width:420px;max-width:100%;padding:20px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.16)}
+  #clusterDialog h2{font-size:16px;margin:0 0 12px}
+  #clusterDialog label{display:block;margin:14px 0 6px;font-weight:600}
+  #clusterName{width:100%;padding:9px;border:1px solid var(--line);border-radius:6px}
+  #clusterError{color:var(--danger);font-size:12px;min-height:18px;margin-top:6px}
   .star{border:none;background:transparent;cursor:pointer;padding:2px 3px;line-height:1;
         font-size:13px;color:#c9ced6;flex:0 0 auto}
   .star:hover{color:#f0a020}
@@ -279,15 +338,22 @@
   <button class="btn" id="bExcel">Excel</button>
   <span class="sep"></span>
   <button class="btn ghost" id="bSave">Backup</button>
+  <button class="btn ghost" id="bRecovery" title="Download untouched recovery copies">Recovery copies</button>
   <button class="btn ghost" id="bLoad">Restore file</button>
   <button class="btn ghost" id="bReset">Reset</button>
   <input type="file" id="fileIn" accept=".json" hidden>
 </div>
 
+<div id="storageWarning" role="alert" hidden>
+  <span id="storageWarningText"></span>
+  <button class="btn" id="bDownloadOriginal" type="button">Download stored original</button>
+  <button class="btn" id="bDownloadDraft" type="button">Download current work</button>
+</div>
 <div id="main">
   <div id="left">
     <div id="tools">
-      <button class="tool on" data-tool="select">↖ Select</button>
+      <button class="tool on" data-tool="select" title="Ctrl/⌘ or Shift-click to select multiple objects. Drag empty space to select an area; drag a selected object to move the group. Esc clears selection.">↖ Select</button>
+      <button class="btn" id="bFitBoard" type="button" title="Show all board objects without moving them">Fit board</button>
       <button class="tool" data-tool="pen">✎ Draw</button>
       <button class="tool" data-tool="link" title="Connect two concepts, or a concept and a category card">↔ Connect</button>
       <button class="tool" data-tool="text">T Text</button>
@@ -351,17 +417,26 @@
       <span class="hint">Starts with empty Raw and Categories lists. The board remains shared.</span>
     </div>
     <div id="tabs">
-      <button class="tab on" data-pane="raw">Raw</button>
+      <button class="tab on" data-pane="raw">List</button>
       <button class="tab" data-pane="cat">Categories</button>
       <button class="tab temporarily-hidden" data-pane="causal">Causal</button>
       <button class="tab temporarily-hidden" data-pane="ont">Table</button>
     </div>
 
+    <div id="selectionBar">
+      <button class="btn" id="bMultiSelect" type="button" aria-pressed="false">Select multiple</button>
+      <span id="selectionCount" role="status" aria-live="polite">0 selected</span>
+      <button class="btn" id="bSelectionBoard" type="button" disabled>To board</button>
+      <button class="btn" id="bSelectionNotes" type="button" disabled>To Notes</button>
+      <button class="btn" id="bSelectionCluster" type="button" disabled>Cluster</button>
+      <button class="btn ghost" id="bSelectionClear" type="button" disabled>Clear</button>
+    </div>
     <div class="pane on" id="pane-raw">
-      <p class="paneNote">Every concept you are working with. <b>Add</b> one below; hover a row for
-        <b>✎ rename · ⇄ recategorize · ✕ delete</b>. Click <b>☆</b> to mark a concept <b>most relevant</b> and keep it pinned at the top; once something is up there you can drag others in and out. Drag a concept <b>up or down to reorder it</b>, or drag
-        it to the board to place it there. <b>Double-click</b> a concept to add an annotation; use <b>+</b> to place it on the board. A <b>note</b> badge marks saved annotations. Green rows are already on the board. A node on the board <b>is</b>
-        its concept: rename one and the other follows, and anything you sketch with <b>+ Concept</b> appears here too.</p>
+      <div id="listViewBar">
+        <button class="btn" id="bEmptyCluster" type="button">+ Cluster</button>
+        <button class="btn ghost" id="bExpandClusters" type="button">Expand all</button>
+        <button class="btn ghost" id="bCollapseClusters" type="button">Collapse all</button>
+      </div>
       <div class="addRow">
         <input id="newRaw" placeholder="New concept name">
         <select id="newRawCat"></select>
@@ -376,10 +451,6 @@
     </div>
 
     <div class="pane" id="pane-cat">
-      <p class="paneNote">Drag a concept onto a <b>category or subcategory heading</b> to move it there, or drag it
-        above or below another concept to reorder it. Drag a <b>category heading to the board</b> to add a collapsible card. Categories can also be edited: click the
-        <b>coloured dot</b> to change a colour, click the <b>name</b> to rename, <b>⊞</b> makes a subtype,
-        <b>+</b> adds a concept, <b>✕</b> removes a category. Double-click a concept to annotate it. The board card follows changes made here.</p>
       <div class="addRow">
         <input id="newTypeName" placeholder="New category name">
         <button class="btn" id="bAddType">Add category</button>
@@ -444,6 +515,29 @@
   </div>
 </div>
 
+<div id="conceptMenu" role="menu" aria-label="Selected concepts" hidden>
+  <button id="bContextCluster" type="button" role="menuitem">Create cluster…</button>
+</div>
+<div id="clusterBackdrop" hidden>
+  <form id="clusterDialog" role="dialog" aria-modal="true" aria-labelledby="clusterHeading">
+    <h2 id="clusterHeading">Create cluster</h2>
+    <label for="clusterName">Cluster name</label>
+    <input id="clusterName" maxlength="100" autocomplete="off" required>
+    <label for="clusterColor">Border color</label>
+    <input id="clusterColor" type="color" value="#2f6df6" style="display:block;width:64px;height:36px;margin:6px 0;cursor:pointer">
+    <div id="clusterError" role="alert"></div>
+    <div class="dialogActions">
+      <button class="btn" type="button" id="bClusterCancel">Cancel</button>
+      <button class="btn primary" type="submit">Create cluster</button>
+    </div>
+  </form>
+</div>
+<dialog id="recoveryDialog" aria-labelledby="recoveryHeading">
+  <h2 id="recoveryHeading">Recovery copies</h2>
+  <p class="hint">These are browser-only copies, not cloud backups. Download a JSON file to keep it independently. Restore a file only after saving your current work.</p>
+  <div id="recoveryList"></div>
+  <div class="dialogActions"><button class="btn" id="bRecoveryClose" type="button">Close</button></div>
+</dialog>
 <div id="toast"></div>
 
 <script>
@@ -838,20 +932,81 @@ function session6Concepts(){
 }
 
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
-const STORE_KEY = "concept-explorer-v2";
+const LEGACY_STORE_KEY = "concept-explorer-v2";
+/* Old deployed pages cannot write this key. Keep their original key untouched. */
+const STORE_KEY = "concept-explorer-protected-v1";
+const STORAGE_BUILD = "2026-10-27-protected-2";
+const SUPPORTED_SCHEMA = 13;
+const RECOVERY_PREFIX = STORE_KEY+"-recovery-";
 /* Keep one untouched copy of pre-dataset browser data. This uses a different
    key, so the schema upgrade can never be the only remaining copy. */
-const PRE_DATASET_BACKUP_KEY = STORE_KEY+"-before-session-datasets";
+const PRE_DATASET_BACKUP_KEY = LEGACY_STORE_KEY+"-before-session-datasets";
 
 let S = null, uid = 1;
 const nid = p => (p||"i") + "_" + Date.now().toString(36) + "_" + (uid++);
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,40);
 
 function baseSubs(){ return BASE_SUBS.map(([t,n])=>({id:t+"::"+slug(n), type:t, name:n, mine:false})); }
+/* Outline references are separate from category assignment and board geometry. */
+function ensureListTrees(d){
+  d.clusters=Array.isArray(d.clusters)?d.clusters:[];
+  d.listTrees=d.listTrees||{};
+  for(const type of d.types||[]){
+    if(type.isCluster&&!d.clusters.some(c=>c.id===type.id))
+      d.clusters.push({id:type.id,name:type.name,color:type.color,session:sessionOf(type),legacyTypeId:type.id});
+  }
+  const sessions=new Set((d.concepts||[]).map(sessionOf).concat(d.clusters.map(sessionOf)));
+  for(const session of sessions){
+    const concepts=(d.concepts||[]).filter(c=>sessionOf(c)===session);
+    const clusters=d.clusters.filter(c=>sessionOf(c)===session&&!c.archived);
+    const liveConcepts=new Set(concepts.map(c=>c.id)),liveClusters=new Set(clusters.map(c=>c.id));
+    const fresh=!Array.isArray(d.listTrees[session]);
+    const seen=new Set(),groups=new Set();
+    function clean(items){return items.filter(item=>{
+      if(item.kind==='concept'){
+        if(!liveConcepts.has(item.id)||seen.has(item.id))return false;seen.add(item.id);return true;
+      }
+      if(!liveClusters.has(item.id)||groups.has(item.id))return false;
+      groups.add(item.id);item.children=clean(item.children||[]);return true;
+    });}
+    const roots=clean(fresh?[]:d.listTrees[session]);
+    for(const c of concepts){
+      if(seen.has(c.id))continue;
+      const legacy=fresh&&clusters.find(g=>g.legacyTypeId&&c.type===g.legacyTypeId);
+      if(legacy){
+        let entry=roots.find(x=>x.kind==='cluster'&&x.id===legacy.id);
+        if(!entry){entry={kind:'cluster',id:legacy.id,children:[]};roots.push(entry);groups.add(legacy.id);}
+        entry.children.push({kind:'concept',id:c.id});
+      }else roots.push({kind:'concept',id:c.id});
+      seen.add(c.id);
+    }
+    for(const c of clusters)if(!groups.has(c.id))roots.push({kind:'cluster',id:c.id,children:[]});
+    d.listTrees[session]=roots;
+  }
+  d.listView='grouped';
+  return d;
+}
+const clusterOf=(id,state=S)=>(state.clusters||[]).find(c=>c.id===id)||null;
+function locateOutline(items,ref,depth=0){
+  for(let i=0;i<items.length;i++){
+    const item=items[i];
+    if(item.kind===ref.kind&&item.id===ref.id)return {items,index:i,item,depth};
+    if(item.kind==='cluster'){const found=locateOutline(item.children,ref,depth+1);if(found)return found;}
+  }
+  return null;
+}
+function outlineConceptIds(items){return items.flatMap(item=>item.kind==='concept'?[item.id]:outlineConceptIds(item.children));}
+function clusterConcepts(id,state=S){
+  const cluster=clusterOf(id,state);if(!cluster)return [];
+  const entry=locateOutline((state.listTrees||{})[sessionOf(cluster)]||[],{kind:'cluster',id});
+  const ids=entry?outlineConceptIds(entry.item.children):[];
+  return ids.map(id=>(state.concepts||[]).find(c=>c.id===id)).filter(Boolean);
+}
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:12,
+    schema:13,
+    clusters:[],listTrees:{},listView:"grouped",
     activeSession:"session1",
     customDatasets:[],
     meta:{name:"", title:""},
@@ -901,34 +1056,183 @@ function fillCatSelect(sel, current, opts){
    1. Persistence — the student's work lives in this browser
    ========================================================= */
 let saveTimer=null, lastSave=0, dirty=false, storageOK=true, suspend=false;
+let storageBlocked=false, storageBlockReason="", baselineRaw=null, originalRaw=null;
+let pendingStorageUpgrade=false, saveInFlight=null;
+const storageTabId=Date.now().toString(36)+"-"+Math.random().toString(36).slice(2);
+const TAB_DRAFT_KEY=RECOVERY_PREFIX+storageTabId+"-closing-draft";
 
-function writeNow(){
-  clearTimeout(saveTimer); saveTimer=null;
-  if(!dirty || suspend) return;
+function showStorageWarning(message){
+  document.getElementById("storageWarningText").textContent=message;
+  document.getElementById("storageWarning").hidden=false;
+}
+function blockStorage(message){
+  storageBlocked=true;storageOK=false;storageBlockReason=message;
+  clearTimeout(saveTimer);saveTimer=null;
+  showStorageWarning(message+" Automatic saving is paused. Download current work before reopening this page.");
+  paintSaveChip();
+}
+function validateStoredState(d){
+  if(!d || typeof d!=="object" || Array.isArray(d))throw new Error("Invalid workspace object");
+  if(d.schema!==undefined && (!Number.isInteger(d.schema)||d.schema<1||d.schema>SUPPORTED_SCHEMA))
+    throw new Error("Unsupported workspace version; use a compatible newer app");
+  if(d.storageProtocol!==undefined&&d.storageProtocol!==1)throw new Error("Unsupported save protocol");
+  if(d.schema>=13&&(!Array.isArray(d.clusters)||!d.listTrees||typeof d.listTrees!=="object"||Array.isArray(d.listTrees)))
+    throw new Error("Missing cluster outline in this workspace version");
+  if(typeof d.storageBuild==="string"&&d.storageBuild>STORAGE_BUILD)
+    throw new Error("This workspace was saved by a newer protected app");
+  function check(o){
+    if(!o||typeof o!=="object"||!Array.isArray(o.concepts))throw new Error("Invalid concept list");
+    if(o.concepts.some(c=>!c||typeof c.label!=="string"||(c.annotation!==undefined&&typeof c.annotation!=="string")))throw new Error("Invalid concept entry");
+    for(const key of ["types","subs","customDatasets","versions","causal","ont","clusters"])
+      if(o[key]!==undefined&&!Array.isArray(o[key]))throw new Error("Invalid "+key);
+    if(o.notes!==undefined&&typeof o.notes!=="string")throw new Error("Invalid notes");
+    if(o.meta!==undefined&&(!o.meta||typeof o.meta!=="object"||Array.isArray(o.meta)))throw new Error("Invalid metadata");
+    if(!o.meta||!o.scene)throw new Error("Missing workspace metadata or board");
+    if(o.types&&o.types.some(t=>!t||typeof t.name!=="string"||typeof t.id!=="string"))throw new Error("Invalid category");
+    if(o.clusters&&o.clusters.some(c=>!c||typeof c.id!=="string"||typeof c.name!=="string"))throw new Error("Invalid cluster");
+    if(o.listTrees!==undefined){
+      if(!o.listTrees||typeof o.listTrees!=="object"||Array.isArray(o.listTrees))throw new Error("Invalid list outline");
+      for(const roots of Object.values(o.listTrees)){
+        const seen=new Set();
+        function walk(items,depth){
+          if(depth>64||!Array.isArray(items))throw new Error("Invalid outline depth");
+          for(const item of items){
+            if(!item||!['concept','cluster'].includes(item.kind)||typeof item.id!=="string"||seen.has(item.kind+item.id))throw new Error("Invalid outline entry");
+            seen.add(item.kind+item.id);if(item.kind==='cluster')walk(item.children,depth+1);
+          }
+        }
+        walk(roots,0);
+      }
+    }
+    if(o.subs&&o.subs.some(s=>!s||typeof s.name!=="string"))throw new Error("Invalid subcategory");
+    if(o.causal&&o.causal.some(r=>!r||typeof r.text!=="string"))throw new Error("Invalid causal row");
+    if(o.scene!==undefined){
+      if(!o.scene||typeof o.scene!=="object"||Array.isArray(o.scene))throw new Error("Invalid board");
+      for(const key of ["nodes","strokes","texts","links"])
+        if(!Array.isArray(o.scene[key]))throw new Error("Invalid board "+key);
+      if(o.scene.categoryCards!==undefined&&!Array.isArray(o.scene.categoryCards))throw new Error("Invalid board categories");
+      for(const key of ["nodes","texts","categoryCards"])
+        if((o.scene[key]||[]).some(n=>!n||!Number.isFinite(n.x)||!Number.isFinite(n.y)))throw new Error("Invalid board position");
+      if((o.scene.strokes||[]).some(s=>!s||!Array.isArray(s.pts)||s.pts.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y))))throw new Error("Invalid pen stroke");
+      if((o.scene.texts||[]).some(t=>typeof t.text!=="string"))throw new Error("Invalid board text");
+      if((o.scene.links||[]).some(l=>!l||typeof l.from!=="string"||typeof l.to!=="string"))throw new Error("Invalid board link");
+    }
+  }
+  check(d);
+  for(const v of d.versions||[]){if(!v||!v.snap||!v.snap.scene)throw new Error("Invalid saved version");check(v.snap);}
+  return d;
+}
+function preserveRecovery(raw,reason){
+  if(raw===null)return null;
+  const key=RECOVERY_PREFIX+Date.now()+"-"+storageTabId+"-"+reason+"-"+Math.random().toString(36).slice(2,7);
+  localStorage.setItem(key,raw);
+  if(localStorage.getItem(key)!==raw)throw new Error("Recovery copy could not be verified");
+  return key;
+}
+function stashDraft(){
+  if(!S||suspend)return;
   try{
-    S.savedAt=Date.now();
-    localStorage.setItem(STORE_KEY, JSON.stringify(S));
-    dirty=false; lastSave=S.savedAt; storageOK=true;
+    localStorage.setItem(TAB_DRAFT_KEY,JSON.stringify({...S,recoveryDraftAt:Date.now(),
+      recoveryBaseRaw:baselineRaw,recoveryLegacyRaw:baselineRaw===null?originalRaw:null}));
   }catch(e){
     storageOK=false;
-    toast("Could not save to this browser. Use Backup to keep a copy of your work.");
+    showStorageWarning("The temporary recovery draft could not be saved. Keep this tab open until saving succeeds, or download current work.");
   }
-  paintSaveChip();
+}
+function compatibleDrafts(){
+  return Object.keys(localStorage).filter(k=>k.startsWith(RECOVERY_PREFIX)&&k.endsWith("-closing-draft")).flatMap(key=>{
+    try{
+      const raw=localStorage.getItem(key),d=JSON.parse(raw);
+      if(d.recoveryBaseRaw!==baselineRaw || (baselineRaw===null&&d.recoveryLegacyRaw!==originalRaw))return [];
+      validateStoredState(d);return [{key,raw,data:d}];
+    }catch(e){return [];}
+  });
+}
+function showClosingDraftNotice(){
+  if(storageBlocked)return;
+  try{
+    const hasDraft=Object.keys(localStorage).some(k=>{
+      if(!k.startsWith(RECOVERY_PREFIX)||!k.endsWith("-closing-draft"))return false;
+      const d=JSON.parse(localStorage.getItem(k));return Number(d.recoveryDraftAt)>(Number(S.savedAt)||0);
+    });
+    if(hasDraft)showStorageWarning("A closing-tab draft may contain unsaved work. Open Recovery copies to download and inspect it; nothing was restored automatically.");
+  }catch(e){}
+}
+
+async function writeNow(){
+  clearTimeout(saveTimer); saveTimer=null;
+  if(storageBlocked)return false;
+  if(suspend)return false;
+  if(saveInFlight){await saveInFlight;return dirty&&!storageBlocked?writeNow():!storageBlocked&&storageOK;}
+  if(!dirty)return storageOK;
+  stashDraft();
+  if(!navigator.locks || !navigator.locks.request){
+    blockStorage("This browser cannot safely coordinate saves. Use a current browser or download a JSON Backup.");return false;
+  }
+  saveInFlight=navigator.locks.request(STORE_KEY+"-write",async()=>{
+    if(storageBlocked||suspend)return false;
+    try{
+      if(localStorage.getItem(STORE_KEY)!==baselineRaw){
+        blockStorage("Another tab changed the saved workspace. This tab will not overwrite it.");return false;
+      }
+      validateStoredState(S);
+      const stamp=Date.now();
+      const next={...S,savedAt:stamp,storageBuild:STORAGE_BUILD,storageProtocol:1,
+        storageRevision:(Number(S.storageRevision)||0)+1,storageWriter:storageTabId};
+      const raw=JSON.stringify(next);
+      localStorage.setItem(STORE_KEY,raw);
+      if(localStorage.getItem(STORE_KEY)!==raw){blockStorage("Saved data changed during verification.");return false;}
+      S.savedAt=stamp;S.storageBuild=STORAGE_BUILD;S.storageRevision=next.storageRevision;S.storageWriter=storageTabId;
+      S.storageProtocol=1;
+      baselineRaw=raw;dirty=false;lastSave=stamp;storageOK=true;
+      try{localStorage.removeItem(TAB_DRAFT_KEY);}catch(e){}
+      document.getElementById("storageWarning").hidden=true;
+      return true;
+    }catch(e){
+      storageOK=false;
+      showStorageWarning("Your latest work is not saved (storage is full, unavailable, or data validation failed). The previous stored copy was kept. Download current work now.");
+      return false;
+    }
+  }).catch(()=>{blockStorage("Safe saving could not start. The existing stored data was kept.");return false;});
+  let ok;
+  try{
+    ok=await saveInFlight;
+  }finally{saveInFlight=null;paintSaveChip();}
+  return ok;
 }
 function persist(){
   if(suspend) return;
   dirty=true;
+  stashDraft();
+  if(storageBlocked)return;
   if(Date.now()-lastSave > 2000){ writeNow(); return; }  /* never let the debounce starve a write */
   clearTimeout(saveTimer);
   saveTimer=setTimeout(writeNow,400);
 }
 window.addEventListener("pagehide", writeNow);
 window.addEventListener("beforeunload", writeNow);
+/* Browser shutdown need not finish asynchronous work. A tab-owned draft never
+   replaces the shared workspace and remains downloadable in Recovery copies. */
+function keepClosingDraft(){
+  if(!dirty||!S||suspend)return;
+  stashDraft();
+}
+window.addEventListener("pagehide",keepClosingDraft);
+window.addEventListener("beforeunload",keepClosingDraft);
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden) writeNow(); });
+window.addEventListener("storage",e=>{
+  if(e.key===STORE_KEY && e.newValue!==baselineRaw)
+    blockStorage("Another tab changed or removed the saved workspace. This tab will not overwrite it.");
+  else if(e.key===null && baselineRaw!==null)
+    blockStorage("Browser site storage was cleared. Download current work before continuing.");
+  else if(e.key===LEGACY_STORE_KEY)
+    blockStorage("An older app version saved to its separate legacy copy. The protected copy was not overwritten; keep both copies before continuing.");
+});
 
 function paintSaveChip(){
   if(typeof IN_FRAME!=="undefined" && IN_FRAME) return;
   const el=document.getElementById("saveChip");
+  if(storageBlocked){el.className="bad";el.textContent="⚠ saving paused";el.title=storageBlockReason;return;}
   if(!storageOK){
     el.className="bad"; el.textContent="⚠ not saved in browser";
     el.title="This browser refused to store your work (private window, or storage full). Use Backup.";
@@ -1012,7 +1316,9 @@ function markLegacyAsSession1(d){
   return d;
 }
 function migrate(d){
-  if(d.schema===12) return markLegacyAsSession1(d);
+  if(d.schema!==undefined && (!Number.isInteger(d.schema)||d.schema>SUPPORTED_SCHEMA))
+    throw new Error("Unsupported workspace version");
+  if(d.schema===13||d.schema===12) return markLegacyAsSession1(d);
   if(d.schema===11){                /* add Search Strategy without touching existing work */
     markLegacyAsSession1(d);
     d.schema=12;
@@ -1109,6 +1415,8 @@ function bindNodes(d){
 }
 function hydrate(d){
   d=migrate(d);
+  d.schema=SUPPORTED_SCHEMA;
+  delete d.recoveryBaseRaw;delete d.recoveryLegacyRaw;delete d.recoveryDraftAt;
   d.customDatasets = Array.isArray(d.customDatasets) ? d.customDatasets : [];
   d.types = (d.types && d.types.length) ? d.types :
     DEFAULT_TYPES.map(t=>({...t,session:"session1"}));
@@ -1121,29 +1429,41 @@ function hydrate(d){
   d.causal = (d.causal && d.causal.length) ? d.causal : [{id:nid("r"),depth:0,text:""}];
   d.concepts = d.concepts || [];
   bindNodes(d);
+  ensureListTrees(d);
   (d.versions||[]).forEach(v=>{
     if(!v.snap) return;
     if(!v.snap.types || !v.snap.types.length)
       v.snap.types=DEFAULT_TYPES.map(t=>({...t,session:"session1"}));
     markLegacyAsSession1(v.snap);
     bindNodes(v.snap);
+    ensureListTrees(v.snap);
   });
   return d;
 }
 function restore(){
   try{
-    const raw=localStorage.getItem(STORE_KEY);
-    if(!raw) return false;
-    const d=JSON.parse(raw);
-    if(!d || !d.concepts) return false;
-    if((Number(d.schema)||0)<7 && !localStorage.getItem(PRE_DATASET_BACKUP_KEY)){
-      try{ localStorage.setItem(PRE_DATASET_BACKUP_KEY, raw); }
-      catch(e){ /* If storage is full, STORE_KEY itself still holds the untouched original. */ }
+    baselineRaw=localStorage.getItem(STORE_KEY);
+    let raw=baselineRaw===null?localStorage.getItem(LEGACY_STORE_KEY):baselineRaw;
+    originalRaw=raw;
+    let d=raw===null?null:validateStoredState(JSON.parse(raw)),recoveredDraft=false;
+    const drafts=compatibleDrafts();
+    if(drafts.length===1){
+      preserveRecovery(raw,"before-draft-recovery");
+      preserveRecovery(drafts[0].raw,"recovered-draft");
+      raw=drafts[0].raw;d=drafts[0].data;
+      delete d.recoveryBaseRaw;delete d.recoveryLegacyRaw;delete d.recoveryDraftAt;
+      pendingStorageUpgrade=true;
+      recoveredDraft=true;
     }
+    if(d===null)return false;
+    pendingStorageUpgrade=pendingStorageUpgrade||baselineRaw===null||d.storageBuild!==STORAGE_BUILD||d.schema!==SUPPORTED_SCHEMA;
+    if(pendingStorageUpgrade&&!recoveredDraft)preserveRecovery(raw,"before-update");
     const next=hydrate(d);
-    if(!next || !Array.isArray(next.concepts) || !Array.isArray(next.types)) return false;
+    validateStoredState(next);
     S=next; return true;
-  }catch(e){ return false; }
+  }catch(e){
+    blockStorage("The stored workspace could not be safely opened. Its original data has not been replaced.");return false;
+  }
 }
 
 function twoStep(btn,label,fn){
@@ -1171,6 +1491,41 @@ const editor=document.getElementById("nodeEditor");
 let DPR=1, CW=0, CH=0, selected=null, linkFrom=null, drag=null, drawing=null, hoverLink=null;
 let linkGesture=null, eraseGesture=false, eraseChanged=false;
 const history=[], future=[];
+const boardSelection=new Map();
+let boardMarquee=null;
+const boardView={x:0,y:0,scale:1};
+const boardWorldPoint=(x,y)=>({x:(x-boardView.x)/boardView.scale,y:(y-boardView.y)/boardView.scale});
+const boardScreenPoint=(x,y)=>({x:x*boardView.scale+boardView.x,y:y*boardView.scale+boardView.y});
+function orderedBoardNodes(){
+  const rank=n=>selected?.kind==='node'&&selected.id===n.id?2:boardSelection.has(n.id)?1:0;
+  return S.scene.nodes.slice().sort((a,b)=>rank(a)-rank(b));
+}
+function revealBoardItems(refs,force=false){
+  if(focusMode==='list'||focusMode==='notes')setFocusMode(null);
+  resizeCanvas();
+  const rects=refs.map(ref=>{
+    if(ref.kind==='bounds')return ref.rect;
+    const o=boardObject(ref);if(!o)return null;
+    if(ref.kind==='node')return nodeRect(o);
+    if(ref.kind==='category')return cardRect(o);
+    ctx.font=(11+o.size*2)+'px system-ui,sans-serif';
+    return {x:o.x,y:o.y,w:Math.max(1,ctx.measureText(o.text).width),h:13+o.size*2};
+  }).filter(Boolean);
+  if(!rects.length)return;
+  const margin=20;
+  const visible=rects.every(r=>{const p=boardScreenPoint(r.x,r.y);return p.x>=margin&&p.y>=margin&&p.x+r.w*boardView.scale<=CW-margin&&p.y+r.h*boardView.scale<=CH-margin;});
+  if(!visible||force){
+    const x=Math.min(...rects.map(r=>r.x)),y=Math.min(...rects.map(r=>r.y));
+    const w=Math.max(...rects.map(r=>r.x+r.w))-x,h=Math.max(...rects.map(r=>r.y+r.h))-y;
+    const scale=Math.max(.001,Math.min(1,Math.max(1,CW-margin*2)/Math.max(1,w),Math.max(1,CH-margin*2)/Math.max(1,h)));
+    boardView.scale=scale;boardView.x=CW/2-(x+w/2)*scale;boardView.y=CH/2-(y+h/2)*scale;
+  }
+  render();
+}
+function boardObject(ref){
+  return (ref.kind==="node"?S.scene.nodes:ref.kind==="category"?categoryCards():S.scene.texts).find(o=>o.id===ref.id);
+}
+function boardIsSelected(kind,id){return boardSelection.has(id)||(selected&&selected.kind===kind&&selected.id===id);}
 
 function resizeCanvas(){
   DPR=window.devicePixelRatio||1;
@@ -1209,10 +1564,10 @@ function snapshot(){
 }
 function undo(){ if(!history.length) return;
   future.push(JSON.stringify(S.scene)); S.scene=JSON.parse(history.pop());
-  selected=null; render(); renderRight(); persist(); updUndo(); }
+  selected=null;boardSelection.clear();render();renderRight();persist();updUndo(); }
 function redo(){ if(!future.length) return;
   history.push(JSON.stringify(S.scene)); S.scene=JSON.parse(future.pop());
-  selected=null; render(); renderRight(); persist(); updUndo(); }
+  selected=null;boardSelection.clear();render();renderRight();persist();updUndo(); }
 function updUndo(){
   document.getElementById("bUndo").disabled=!history.length;
   document.getElementById("bRedo").disabled=!future.length;
@@ -1284,7 +1639,8 @@ function nodeColor(n){ const t=typeOf(nodeTypeId(n)); return t?t.color:"#868e96"
    and concepts always come from the same live data as the right-hand list. */
 const CARD_W=260, CARD_HEAD_H=53, CARD_ROW_H=24, CARD_VISIBLE_ROWS=9;
 const categoryCards = () => S.scene.categoryCards || [];
-const cardItems = card => S.concepts.filter(c=>c.type===card.typeId);
+const cardType = card => card.clusterId?clusterOf(card.clusterId):typeOf(card.typeId);
+const cardItems = card => card.clusterId?clusterConcepts(card.clusterId):S.concepts.filter(c=>c.type===card.typeId);
 function cardConceptAt(card,y){
   if(!card.expanded) return null;
   const row=Math.floor((y-card.y-CARD_HEAD_H-4)/CARD_ROW_H);
@@ -1300,7 +1656,7 @@ function boardEndpoint(id){
   const node=S.scene.nodes.find(n=>n.id===id);
   if(node) return {kind:"node",x:node.x,y:node.y,rect:nodeRect(node),label:nodeLabel(node)};
   const card=categoryCards().find(c=>c.id===id);
-  const type=card && typeOf(card.typeId);
+  const type=card && cardType(card);
   if(!type) return null;
   return {kind:"category",x:card.x+CARD_W/2,y:card.y+CARD_HEAD_H/2,
           rect:{x:card.x,y:card.y,w:CARD_W,h:CARD_HEAD_H},label:type.name};
@@ -1308,14 +1664,14 @@ function boardEndpoint(id){
 const boardEndpointLabel = endpoint =>
   endpoint.kind==="category" ? "Category: "+endpoint.label : endpoint.label;
 function paintCategoryCard(g,card){
-  const t=typeOf(card.typeId); if(!t) return;
+  const t=cardType(card); if(!t) return;
   const r=cardRect(card), items=cardItems(card);
   const maxScroll=Math.max(0,items.length-CARD_VISIBLE_ROWS);
   card.scroll=Math.max(0,Math.min(card.scroll||0,maxScroll));
   g.save();
   g.shadowColor="rgba(23,33,50,.10)"; g.shadowBlur=12; g.shadowOffsetY=3;
-  g.fillStyle="#fff"; g.strokeStyle=(selected&&selected.kind==="category"&&selected.id===card.id)?"#2f6df6":"#dce2e9";
-  g.lineWidth=(selected&&selected.kind==="category"&&selected.id===card.id)?2.4:1;
+  g.fillStyle="#fff"; g.strokeStyle=boardIsSelected("category",card.id)?"#2f6df6":t.color;
+  g.lineWidth=boardIsSelected("category",card.id)?2.4:1;
   roundRect(g,r.x,r.y,r.w,r.h,9); g.fill(); g.stroke();
   g.shadowColor="transparent"; g.shadowBlur=0; g.shadowOffsetY=0;
   g.fillStyle=t.color; g.fillRect(r.x+1,r.y+9,4,r.h-18);
@@ -1358,12 +1714,14 @@ function paintCategoryCard(g,card){
 }
 
 function render(target){
+  for(const [id,ref] of boardSelection)if(!boardObject(ref))boardSelection.delete(id);
   const g=target||ctx;
   g.save(); g.clearRect(0,0,CW,CH);
   g.fillStyle="#fff"; g.fillRect(0,0,CW,CH);
   g.strokeStyle="#f1f3f5"; g.lineWidth=1;
   for(let x=0;x<CW;x+=24){ g.beginPath();g.moveTo(x+.5,0);g.lineTo(x+.5,CH);g.stroke(); }
   for(let y=0;y<CH;y+=24){ g.beginPath();g.moveTo(0,y+.5);g.lineTo(CW,y+.5);g.stroke(); }
+  g.translate(boardView.x,boardView.y);g.scale(boardView.scale,boardView.scale);
 
   g.lineCap="round";
   S.scene.links.forEach(l=>{
@@ -1396,10 +1754,11 @@ function render(target){
     g.stroke();
   });
   categoryCards().forEach(card=>paintCategoryCard(g,card));
-  S.scene.nodes.forEach(n=>{
+  orderedBoardNodes().forEach(n=>{
     const m=measureNode(n), r=nodeRect(n), col=nodeColor(n);
     g.fillStyle="#fff"; g.strokeStyle=col;
-    g.lineWidth=(selected&&selected.kind==="node"&&selected.id===n.id)?2.6:1.4;
+    /* Selection changes thickness, never the concept's category colour. */
+    g.lineWidth=!target&&boardIsSelected("node",n.id)?2.6:1.4;
     roundRect(g,r.x,r.y,r.w,r.h,8); g.fill(); g.stroke();
     g.fillStyle=col; g.beginPath(); g.arc(r.x+13,r.y+15,3.6,0,7); g.fill();
     g.fillStyle="#1c1f24"; g.font=NODE_FONT; g.textBaseline="middle";
@@ -1417,19 +1776,27 @@ function render(target){
   S.scene.texts.forEach(t=>{
     g.fillStyle=t.color; g.font=(11+t.size*2)+"px -apple-system,BlinkMacSystemFont,system-ui,sans-serif";
     g.textBaseline="top"; g.fillText(t.text,t.x,t.y);
-    if(selected&&selected.kind==="text"&&selected.id===t.id){
+    if(boardIsSelected("text",t.id)){
       const w=g.measureText(t.text).width, h=13+t.size*2;
       g.strokeStyle="#2f6df6"; g.lineWidth=1; g.strokeRect(t.x-3,t.y-3,w+6,h+6);
     }
   });
+  if(boardMarquee && !target){
+    const m=boardMarquee;
+    g.fillStyle="rgba(47,109,246,.08)";g.strokeStyle="#2f6df6";g.lineWidth=1;g.setLineDash([4,3]);
+    g.fillRect(Math.min(m.x,m.endX),Math.min(m.y,m.endY),Math.abs(m.endX-m.x),Math.abs(m.endY-m.y));
+    g.strokeRect(Math.min(m.x,m.endX),Math.min(m.y,m.endY),Math.abs(m.endX-m.x),Math.abs(m.endY-m.y));g.setLineDash([]);
+  }
   g.restore();
   const si=document.getElementById("selInfo");
-  if(si) si.textContent=S.scene.nodes.length+" nodes · "+categoryCards().length+" categories · "+S.scene.links.length+" links";
+  if(si) si.textContent=S.scene.nodes.length+" nodes · "+categoryCards().length+" categories · "+S.scene.links.length+" links"+
+    (boardSelection.size>1?" · "+boardSelection.size+" selected":"");
   if(!target && typeof paintNodeType==="function") paintNodeType();
 }
 function hit(x,y){
-  for(let i=S.scene.nodes.length-1;i>=0;i--){
-    const n=S.scene.nodes[i], r=nodeRect(n);
+  const nodes=orderedBoardNodes();
+  for(let i=nodes.length-1;i>=0;i--){
+    const n=nodes[i], r=nodeRect(n);
     if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) return {kind:"node",id:n.id,obj:n};
   }
   for(let i=S.scene.texts.length-1;i>=0;i--){
@@ -1445,7 +1812,7 @@ function hit(x,y){
   }
   return null;
 }
-const pos = e => { const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+const pos = e => { const r=cv.getBoundingClientRect();return boardWorldPoint(e.clientX-r.left,e.clientY-r.top); };
 const canConnectHit = h => h && (h.kind==="node" || h.kind==="category");
 function connectItems(from,to){
   if(!from || !to || from===to) return false;
@@ -1462,6 +1829,7 @@ function connectItems(from,to){
 }
 
 cv.addEventListener("pointerdown", e=>{
+  if(e.button!==0)return;
   cv.setPointerCapture(e.pointerId);
   const p=pos(e), h=hit(p.x,p.y), tool=S.tool;
   if(tool==="pen"){ snapshot(); drawing={color:S.color,size:S.size,pts:[p]}; S.scene.strokes.push(drawing); return; }
@@ -1490,17 +1858,42 @@ cv.addEventListener("pointerdown", e=>{
     snapshot(); h.obj.expanded=!h.obj.expanded; h.obj.scroll=0;
     selected={kind:"category",id:h.id}; render(); persist(); return;
   }
-  selected = h ? {kind:h.kind,id:h.id} : null;
+  const extend=e.shiftKey||e.ctrlKey||e.metaKey;
+  if(!h){
+    if(!extend)boardSelection.clear();selected=null;
+    boardMarquee={x:p.x,y:p.y,endX:p.x,endY:p.y,initial:new Map(boardSelection)};
+    render();return;
+  }
+  if(extend){
+    if(boardSelection.has(h.id))boardSelection.delete(h.id);
+    else boardSelection.set(h.id,{kind:h.kind,id:h.id});
+    selected=boardSelection.get(h.id)||null;render();return;
+  }
+  if(!boardSelection.has(h.id)){boardSelection.clear();boardSelection.set(h.id,{kind:h.kind,id:h.id});}
+  selected = {kind:h.kind,id:h.id};
   if(h){
     const source=h.kind==="node" ? conceptOf(h.obj) :
                  h.kind==="category" ? cardConceptAt(h.obj,p.y) : null;
-    snapshot(); drag={kind:h.kind,id:h.id,dx:p.x-h.obj.x,dy:p.y-h.obj.y,
-                     startX:h.obj.x,startY:h.obj.y,noteConceptId:source?source.id:null};
+    drag={kind:h.kind,id:h.id,dx:p.x-h.obj.x,dy:p.y-h.obj.y,
+      pointerX:p.x,pointerY:p.y,snapped:false,
+      members:Array.from(boardSelection.values()).map(ref=>{const o=boardObject(ref);return o?{...ref,x:o.x,y:o.y}:null;}).filter(Boolean),
+      startX:h.obj.x,startY:h.obj.y,noteConceptId:source?source.id:null};
   }
   render();
 });
 cv.addEventListener("pointermove", e=>{
   const p=pos(e);
+  if(boardMarquee){
+    const m=boardMarquee;m.endX=p.x;m.endY=p.y;
+    boardSelection.clear();for(const [id,ref] of m.initial)boardSelection.set(id,ref);
+    const x=Math.min(m.x,p.x),y=Math.min(m.y,p.y),w=Math.abs(p.x-m.x),h=Math.abs(p.y-m.y);
+    if(w>4||h>4){
+      const candidates=S.scene.nodes.map(n=>({kind:"node",id:n.id,r:nodeRect(n)}))
+        .concat(categoryCards().map(c=>({kind:"category",id:c.id,r:cardRect(c)})));
+      candidates.forEach(c=>{const r=c.r;if(r.x<x+w&&r.x+r.w>x&&r.y<y+h&&r.y+r.h>y)boardSelection.set(c.id,{kind:c.kind,id:c.id});});
+    }
+    render();return;
+  }
   if(S.tool==="link" && linkGesture){
     linkGesture.current=p;
     if(Math.hypot(p.x-linkGesture.start.x,p.y-linkGesture.start.y)>5) linkGesture.moved=true;
@@ -1521,10 +1914,10 @@ cv.addEventListener("pointermove", e=>{
     render(); return;
   }
   if(drag){
-    const o = drag.kind==="node" ? S.scene.nodes.find(n=>n.id===drag.id)
-            : drag.kind==="category" ? categoryCards().find(c=>c.id===drag.id)
-            : S.scene.texts.find(t=>t.id===drag.id);
-    if(o){ o.x=p.x-drag.dx; o.y=p.y-drag.dy; render(); }
+    const dx=p.x-drag.pointerX,dy=p.y-drag.pointerY;
+    if(!drag.snapped && Math.hypot(dx,dy)>3){snapshot();drag.snapped=true;}
+    if(drag.snapped)drag.members.forEach(ref=>{const o=boardObject(ref);if(o){o.x=ref.x+dx;o.y=ref.y+dy;}});
+    render();
     noteEl.classList.toggle("concept-drop",!!drag.noteConceptId && pointInNotes(e.clientX,e.clientY));
   }
 });
@@ -1538,13 +1931,14 @@ cv.addEventListener("wheel",e=>{
   render(); persist();
 },{passive:false});
 function endPointer(e){
+  if(boardMarquee){boardMarquee=null;render();}
   if(drawing){ drawing=null; persist(); }
   if(drag){
     if(e.type==="pointerup" && drag.noteConceptId && pointInNotes(e.clientX,e.clientY)){
-      const placed=drag.kind==="node" ? S.scene.nodes.find(x=>x.id===drag.id) :
-                   categoryCards().find(x=>x.id===drag.id);
-      if(placed){ placed.x=drag.startX; placed.y=drag.startY; }
-      insertConceptIntoNotes(S.concepts.find(c=>c.id===drag.noteConceptId));
+      drag.members.forEach(ref=>{const o=boardObject(ref);if(o){o.x=ref.x;o.y=ref.y;}});
+      const concepts=drag.members.filter(ref=>ref.kind==="node").map(ref=>conceptOf(boardObject(ref))).filter(Boolean);
+      if(concepts.length>1)insertConceptIntoNotes({label:concepts.map(conceptNoteText).join("\n\n")});
+      else insertConceptIntoNotes(S.concepts.find(c=>c.id===drag.noteConceptId));
       render();
     }
     noteEl.classList.remove("concept-drop");
@@ -1633,8 +2027,9 @@ function openEditor(obj,kind){
   const r=cv.getBoundingClientRect(), wr=wrap.getBoundingClientRect();
   editor.value = kind==="node" ? nodeLabel(obj) : obj.text;
   editor.style.display="block";
-  editor.style.left=(obj.x-wr.left+r.left-60)+"px";
-  editor.style.top =(obj.y-wr.top +r.top -14)+"px";
+  const screen=boardScreenPoint(obj.x,obj.y);
+  editor.style.left=(screen.x-wr.left+r.left-60)+"px";
+  editor.style.top =(screen.y-wr.top +r.top -14)+"px";
   editor._target={obj,kind};
   /* the browser moves focus to the canvas after our pointerdown handler returns,
      which used to blur (and so commit-and-close) the editor immediately */
@@ -1708,10 +2103,12 @@ annotationBackdrop.addEventListener("keydown",e=>{
 
 function placeNode(concept, x, y){
   if(!concept) return null;
+  boardSelection.clear();
   const existing=S.scene.nodes.find(n=>n.cid===concept.id);
-  if(existing){                       /* already sketched — just select it */
-    selected={kind:"node",id:existing.id}; render();
-    toast("“"+concept.label+"” is already on the board");
+  if(existing){
+    selected={kind:"node",id:existing.id};boardSelection.set(existing.id,selected);
+    revealBoardItems([selected]);
+    toast("Showing “"+concept.label+"” on the board");
     return existing;
   }
   snapshot();
@@ -1739,14 +2136,14 @@ function placeNode(concept, x, y){
     }
   }
   S.scene.nodes.push(n); selected={kind:"node",id:n.id};
-  render(); persist(); renderRight(); return n;
+  render(); persist(); renderRight();revealBoardItems([{kind:'node',id:n.id}]);return n;
 }
 function placeCategoryCard(type,x,y){
   if(!type) return null;
   const existing=categoryCards().find(c=>c.typeId===type.id);
   if(existing){
-    selected={kind:"category",id:existing.id}; render();
-    toast("“"+type.name+"” is already on the board"); return existing;
+    selected={kind:"category",id:existing.id};revealBoardItems([selected]);
+    toast("Showing “"+type.name+"” on the board");return existing;
   }
   snapshot();
   const card={id:nid("card"),typeId:type.id,
@@ -1754,7 +2151,15 @@ function placeCategoryCard(type,x,y){
               y:Math.max(0,(y==null?CH/2:y)-CARD_HEAD_H/2),
               expanded:false,scroll:0};
   S.scene.categoryCards=categoryCards().concat(card);
-  selected={kind:"category",id:card.id}; render(); persist(); return card;
+  selected={kind:"category",id:card.id};render();persist();revealBoardItems([selected]);return card;
+}
+function placeClusterCard(cluster,x,y){
+  const existing=categoryCards().find(c=>c.clusterId===cluster.id);
+  if(existing){selected={kind:'category',id:existing.id};revealBoardItems([selected]);return existing;}
+  snapshot();
+  const card={id:nid('card'),clusterId:cluster.id,x:Math.max(0,(x==null?CW/2:x)-CARD_W/2),
+    y:Math.max(0,(y==null?CH/2:y)-CARD_HEAD_H/2),expanded:false,scroll:0};
+  S.scene.categoryCards=categoryCards().concat(card);selected={kind:'category',id:card.id};render();persist();revealBoardItems([selected]);return card;
 }
 /* Sketching a brand-new concept on the board adds it to the concept list too,
    so nothing a student thinks of on the canvas escapes the ontology. */
@@ -1769,11 +2174,16 @@ wrap.addEventListener("dragleave", ()=>wrap.classList.remove("dragover"));
 wrap.addEventListener("drop", e=>{
   e.preventDefault(); wrap.classList.remove("dragover");
   const r=cv.getBoundingClientRect();
+  const dropPoint=boardWorldPoint(e.clientX-r.left,e.clientY-r.top);
+  const cluster=clusterOf(e.dataTransfer.getData("text/cluster-id"));
+  if(cluster){placeClusterCard(cluster,dropPoint.x,dropPoint.y);return;}
   const t=typeOf(e.dataTransfer.getData("text/category-id"));
-  if(t){ placeCategoryCard(t,e.clientX-r.left,e.clientY-r.top); return; }
+  if(t){placeCategoryCard(t,dropPoint.x,dropPoint.y);return;}
+  const batch=draggedConcepts(e);
+  if(batch.length>1){placeConceptBatch(batch,dropPoint.x,dropPoint.y);return;}
   const c=S.concepts.find(c=>c.id===e.dataTransfer.getData("text/concept-id"));
   if(!c) return;
-  placeNode(c, e.clientX-r.left, e.clientY-r.top);
+  placeNode(c,dropPoint.x,dropPoint.y);
 });
 
 function setTool(name){
@@ -1823,6 +2233,15 @@ document.getElementById("sizeRange").addEventListener("input",e=>{
 });
 document.getElementById("bUndo").addEventListener("click",undo);
 document.getElementById("bRedo").addEventListener("click",redo);
+document.getElementById('bFitBoard').addEventListener('click',()=>{
+  const refs=S.scene.nodes.map(n=>({kind:'node',id:n.id})).concat(categoryCards().map(c=>({kind:'category',id:c.id})),S.scene.texts.map(t=>({kind:'text',id:t.id})));
+  S.scene.strokes.forEach(s=>{
+    if(!s.pts.length)return;
+    const b=s.pts.reduce((b,p)=>({x:Math.min(b.x,p.x),y:Math.min(b.y,p.y),right:Math.max(b.right,p.x),bottom:Math.max(b.bottom,p.y)}),{x:Infinity,y:Infinity,right:-Infinity,bottom:-Infinity});
+    refs.push({kind:'bounds',rect:{x:b.x,y:b.y,w:b.right-b.x+1,h:b.bottom-b.y+1}});
+  });
+  revealBoardItems(refs,true);
+});
 document.getElementById("bAddNode").addEventListener("click",()=>openEditor(addConceptNode("New concept"),"node"));
 document.getElementById("bClear").addEventListener("click",function(){
   twoStep(this,"Clear it?",()=>{
@@ -1833,6 +2252,7 @@ document.getElementById("bClear").addEventListener("click",function(){
 document.addEventListener("keydown", e=>{
   const a=document.activeElement;
   if(/INPUT|TEXTAREA|SELECT/.test(a.tagName) || a.isContentEditable) return;
+  if(e.key==="Escape"){boardSelection.clear();selected=null;render();}
   if((e.key==="Delete"||e.key==="Backspace") && selected){
     e.preventDefault(); snapshot(); removeItem(selected); render(); persist(); renderRight();
   }
@@ -1851,8 +2271,181 @@ function iconBtn(txt,title,fn){
   b.addEventListener("click",e=>{ e.stopPropagation(); fn.call(b,e); });
   return b;
 }
-let conceptDraggingId=null;
+let conceptDraggingId=null, conceptDraggingIds=[];
+let outlineDragRefs=[];
+const draggingListConcepts=()=>S.concepts.filter(c=>conceptDraggingIds.includes(c.id));
+const selectedConceptIds=new Set();
+let selectionAnchor=null, multiSelectMode=false;
+function selectedConcepts(){
+  const order=outlineConceptIds((S.listTrees||{})[S.activeSession]||[]);
+  return order.filter(id=>selectedConceptIds.has(id)).map(id=>S.concepts.find(c=>c.id===id)).filter(Boolean);
+}
+function paintConceptSelection(){
+  const valid=new Set(activeConcepts().map(c=>c.id));
+  for(const id of selectedConceptIds) if(!valid.has(id)) selectedConceptIds.delete(id);
+  const count=selectedConceptIds.size;
+  document.getElementById("right").classList.toggle("select-mode",multiSelectMode);
+  document.getElementById("bMultiSelect").setAttribute("aria-pressed",String(multiSelectMode));
+  document.getElementById("selectionCount").textContent=count+" selected";
+  ["bSelectionBoard","bSelectionNotes","bSelectionClear"].forEach(id=>document.getElementById(id).disabled=!count);
+  document.getElementById("bSelectionCluster").disabled=count<2;
+  document.querySelectorAll(".crow[data-concept-id]").forEach(row=>{
+    const on=selectedConceptIds.has(row.dataset.conceptId);
+    row.classList.toggle("multi-selected",on);
+    const cb=row.querySelector(".concept-check"); if(cb) cb.checked=on;
+  });
+}
+function selectConcept(c,e,forceToggle){
+  const pane=e.currentTarget.closest(".pane");
+  const rows=Array.from(pane.querySelectorAll(".crow[data-concept-id]"));
+  const ids=[...new Set(rows.map(r=>r.dataset.conceptId))];
+  if(e.shiftKey && selectionAnchor && ids.includes(selectionAnchor)){
+    const a=ids.indexOf(selectionAnchor),b=ids.indexOf(c.id);
+    if(!e.ctrlKey && !e.metaKey) selectedConceptIds.clear();
+    ids.slice(Math.min(a,b),Math.max(a,b)+1).forEach(id=>selectedConceptIds.add(id));
+  }else{
+    if(forceToggle || e.ctrlKey || e.metaKey || multiSelectMode){
+      if(selectedConceptIds.has(c.id)) selectedConceptIds.delete(c.id); else selectedConceptIds.add(c.id);
+    }else{ selectedConceptIds.clear(); selectedConceptIds.add(c.id); }
+    selectionAnchor=c.id;
+  }
+  paintConceptSelection();
+}
+function draggedConcepts(e){
+  let ids=[];
+  try{ ids=JSON.parse(e.dataTransfer.getData("application/x-concept-ids")||"[]"); }catch(err){}
+  if(!Array.isArray(ids)) ids=[];
+  if(!ids.length){ const id=e.dataTransfer.getData("text/concept-id"); if(id) ids=[id]; }
+  return [...new Set(ids)].map(id=>S.concepts.find(c=>c.id===id)).filter(Boolean);
+}
+function placeConceptBatch(concepts,x,y){
+  const fresh=concepts.filter(c=>!S.scene.nodes.some(n=>n.cid===c.id));
+  if(!fresh.length){
+    boardSelection.clear();
+    const refs=concepts.map(c=>S.scene.nodes.find(n=>n.cid===c.id)).filter(Boolean).map(n=>({kind:'node',id:n.id}));
+    refs.forEach(ref=>boardSelection.set(ref.id,ref));selected=refs[refs.length-1]||null;
+    revealBoardItems(refs);toast('Showing existing concepts on the board');return;
+  }
+  snapshot();
+  const cols=Math.min(fresh.length,Math.max(1,Math.floor(Math.max(1,CW-40)/280)));
+  const startX=Math.max(140,Math.min(x==null?160:x,Math.max(140,CW-140-(cols-1)*280)));
+  const startY=Math.max(45,y==null?55:y);
+  boardSelection.clear();
+  fresh.forEach((c,i)=>{
+    const col=i%cols,row=Math.floor(i/cols);
+    const n={id:nid("n"),cid:c.id,x:Math.min(startX+col*280,Math.max(140,CW-140)),y:startY+row*110};
+    S.scene.nodes.push(n); selected={kind:"node",id:n.id};
+    boardSelection.set(n.id,{kind:"node",id:n.id});
+  });
+  render();persist();renderRight();
+  revealBoardItems(concepts.map(c=>S.scene.nodes.find(n=>n.cid===c.id)).filter(Boolean).map(n=>({kind:'node',id:n.id})));
+  toast("Added "+fresh.length+" concepts to board"+(fresh.length<concepts.length?" (existing nodes kept)":""));
+}
+document.getElementById("bMultiSelect").addEventListener("click",()=>{
+  if(multiSelectMode)clearListSelection();else{multiSelectMode=true;paintConceptSelection();}
+});
+function clearListSelection(){
+  selectedConceptIds.clear();selectionAnchor=null;multiSelectMode=false;paintConceptSelection();
+}
+document.getElementById("bSelectionClear").addEventListener("click",clearListSelection);
+document.addEventListener('pointerdown',e=>{
+  if(e.button!==0)return;
+  const target=e.target;
+  if(!target.closest('.crow,#bMultiSelect,#bSelectionBoard,#bSelectionNotes,#bSelectionCluster,#bSelectionClear,#conceptMenu,#clusterBackdrop,#annotationBackdrop,#grip')&&
+     (selectedConceptIds.size||multiSelectMode))
+    clearListSelection();
+  if(!target.closest('#board,#tools,#nodeTypeWrap,#nodeEditor,#annotationBackdrop,#clusterBackdrop,#grip')&&
+     (boardSelection.size||selected)){
+    boardSelection.clear();selected=null;render();
+  }
+},true);
+document.getElementById("bSelectionBoard").addEventListener("click",()=>placeConceptBatch(selectedConcepts()));
+document.getElementById("bSelectionNotes").addEventListener("click",()=>{
+  S.noteOpen=true;applyNotes();
+  insertConceptIntoNotes({label:selectedConcepts().map(conceptNoteText).join("\n\n")});
+});
+const conceptMenu=document.getElementById("conceptMenu");
+const clusterBackdrop=document.getElementById("clusterBackdrop");
+const clusterName=document.getElementById("clusterName");
+let clusterRequest=null,clusterReturnFocus=null;
+function hideConceptMenu(){conceptMenu.hidden=true;}
+function openClusterDialog(empty=false,dropIds=null){
+  empty=empty===true;
+  const concepts=dropIds?dropIds.map(id=>activeConcepts().find(c=>c.id===id)).filter(Boolean):selectedConcepts();
+  if(!empty&&concepts.length<2){hideConceptMenu();toast("Select at least two concepts to create a cluster");return;}
+  clusterReturnFocus=document.activeElement;
+  clusterRequest={session:S.activeSession,ids:empty?[]:concepts.map(c=>c.id)};
+  hideConceptMenu();
+  let n=1;while(S.clusters.some(t=>sessionOf(t)===S.activeSession&&t.name.toLowerCase()===("Cluster "+n).toLowerCase()))n++;
+  clusterName.value="Cluster "+n;
+  document.getElementById('clusterColor').value=TYPE_COLORS[S.clusters.length%TYPE_COLORS.length];
+  document.getElementById("clusterError").textContent="";
+  clusterBackdrop.hidden=false;clusterName.focus();clusterName.select();
+}
+function closeClusterDialog(){
+  clusterBackdrop.hidden=true;clusterRequest=null;
+  if(clusterReturnFocus && clusterReturnFocus.isConnected && !conceptMenu.contains(clusterReturnFocus))clusterReturnFocus.focus();
+  else document.getElementById("bSelectionCluster").focus();
+}
+document.getElementById("bSelectionCluster").addEventListener("click",openClusterDialog);
+document.getElementById("bContextCluster").addEventListener("click",openClusterDialog);
+document.getElementById("bClusterCancel").addEventListener("click",closeClusterDialog);
+clusterBackdrop.addEventListener("click",e=>{if(e.target===clusterBackdrop)closeClusterDialog();});
+document.getElementById("clusterDialog").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(!clusterRequest || clusterRequest.session!==S.activeSession){closeClusterDialog();return;}
+  const name=clusterName.value.trim();
+  const error=document.getElementById("clusterError");
+  if(!name){error.textContent="Enter a cluster name.";clusterName.focus();return;}
+  if(S.clusters.some(t=>sessionOf(t)===S.activeSession&&!t.archived&&t.name.toLowerCase()===name.toLowerCase())){
+    error.textContent="A category or cluster with this name already exists.";clusterName.focus();return;
+  }
+  const concepts=clusterRequest.ids.map(id=>activeConcepts().find(c=>c.id===id)).filter(Boolean);
+  if(clusterRequest.ids.length&&concepts.length<2){error.textContent="Select at least two available concepts.";return;}
+  const id=nid("cluster");
+  ensureListTrees(S);
+  const roots=S.listTrees[S.activeSession]||(S.listTrees[S.activeSession]=[]);
+  const first=concepts.length?locateOutline(roots,{kind:'concept',id:concepts[0].id}):null;
+  const container=first?first.items:roots,index=first?first.index:roots.length;
+  const entries=concepts.map(c=>({kind:'concept',id:c.id}));
+  entries.forEach(ref=>{const hit=locateOutline(roots,ref);if(hit)hit.items.splice(hit.index,1);});
+  S.clusters.push({id,name,color:document.getElementById('clusterColor').value,session:S.activeSession,closed:false});
+  container.splice(Math.min(index,container.length),0,{kind:'cluster',id,children:entries});
+  S.listView='grouped';
+  closeClusterDialog();persist();renderRight();
+  toast("Created cluster “"+name+"” with "+concepts.length+" concepts");
+});
+document.getElementById('bEmptyCluster').addEventListener('click',()=>openClusterDialog(true));
+document.getElementById("right").addEventListener("contextmenu",e=>{
+  const row=e.target.closest(".crow[data-concept-id]");
+  if(!row || e.target.closest("input,select,[contenteditable=true]"))return;
+  const id=row.dataset.conceptId;
+  if(!selectedConceptIds.has(id))return;
+  if(selectedConcepts().length<2)return;
+  e.preventDefault();hideConceptMenu();
+  conceptMenu.hidden=false;
+  conceptMenu.style.left=Math.max(8,Math.min(e.clientX,window.innerWidth-conceptMenu.offsetWidth-8))+"px";
+  conceptMenu.style.top=Math.max(8,Math.min(e.clientY,window.innerHeight-conceptMenu.offsetHeight-8))+"px";
+  document.getElementById("bContextCluster").textContent="Create cluster ("+selectedConcepts().length+")…";
+  document.getElementById("bContextCluster").focus();
+});
+document.addEventListener("pointerdown",e=>{if(!conceptMenu.contains(e.target))hideConceptMenu();});
+document.addEventListener("scroll",hideConceptMenu,true);
+window.addEventListener("resize",hideConceptMenu);
+document.addEventListener("keydown",e=>{
+  if(e.key==='Escape'&&clusterBackdrop.hidden&&annotationBackdrop.hidden&&(selectedConceptIds.size||multiSelectMode))clearListSelection();
+  if(!clusterBackdrop.hidden){
+    if(e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();closeClusterDialog();}
+    else if(e.key==="Tab"){
+      const controls=[clusterName,document.getElementById("bClusterCancel"),document.querySelector("#clusterDialog button[type=submit]")];
+      const at=controls.indexOf(document.activeElement);
+      e.preventDefault();controls[(at+(e.shiftKey?-1:1)+controls.length)%controls.length].focus();
+    }
+    e.stopPropagation();
+  }else if(e.key==="Escape"&&!conceptMenu.hidden){hideConceptMenu();e.preventDefault();}
+},true);
 function clearConceptDropMarks(){
+  clearOutlineMarks();
   document.querySelectorAll(".crow.drop-before, .crow.drop-after").forEach(x=>{
     x.classList.remove("drop-before","drop-after");
   });
@@ -1861,14 +2454,15 @@ function clearConceptDropMarks(){
   const fb=document.getElementById("favBlock"); if(fb) fb.classList.remove("fav-drop");
 }
 function moveRawConcept(draggedId,targetId,after){
-  if(!draggedId || draggedId===targetId) return false;
-  const from=S.concepts.findIndex(c=>c.id===draggedId);
-  if(from<0) return false;
-  const moved=S.concepts.splice(from,1)[0];
-  let to=S.concepts.findIndex(c=>c.id===targetId);
-  if(to<0) to=S.concepts.length;
+  const ids=new Set(conceptDraggingIds.length?conceptDraggingIds:[draggedId]);
+  if(!draggedId || ids.has(targetId))return false;
+  const moved=S.concepts.filter(c=>ids.has(c.id));
+  if(!moved.length)return false;
+  const rest=S.concepts.filter(c=>!ids.has(c.id));
+  let to=rest.findIndex(c=>c.id===targetId);
+  if(to<0) to=rest.length;
   else if(after) to++;
-  S.concepts.splice(to,0,moved);
+  rest.splice(to,0,...moved);S.concepts=rest;
   return true;
 }
 function autoScrollPane(pane,e){
@@ -1890,9 +2484,10 @@ function makeCategoryDropTarget(el,type,sub){
   el.addEventListener("drop",e=>{
     if(!conceptDraggingId) return;
     e.preventDefault(); e.stopPropagation();
-    const c=S.concepts.find(x=>x.id===conceptDraggingId);
-    if(c){ c.type=type||null; c.sub=sub||null; persist(); render(); renderRight(); }
-    conceptDraggingId=null; clearConceptDropMarks();
+    const concepts=draggingListConcepts();
+    concepts.forEach(c=>{c.type=type||null;c.sub=sub||null;});
+    if(concepts.length){persist();render();renderRight();}
+    conceptDraggingId=null;conceptDraggingIds=[];clearConceptDropMarks();
   });
 }
 function conceptRow(c,opts){
@@ -1900,20 +2495,38 @@ function conceptRow(c,opts){
   const li=document.createElement("li");
   li.className="crow"+(onBoard(c)?" used":"");
   li.dataset.conceptId=c.id;
+  li.classList.toggle("multi-selected",selectedConceptIds.has(c.id));
+  const check=document.createElement("input");check.type="checkbox";check.className="concept-check";
+  check.checked=selectedConceptIds.has(c.id);check.setAttribute("aria-label","Select "+c.label);
+  check.addEventListener("click",e=>{e.stopPropagation();selectConcept(c,e,true);});
+  li.appendChild(check);
+  li.addEventListener("click",e=>{
+    if(e.target.closest("button,input,select,.acts,[contenteditable=true]"))return;
+    if(e.ctrlKey||e.metaKey||e.shiftKey){e.preventDefault();selectConcept(c,e,false);}
+    else{
+      if(selectedConceptIds.size||multiSelectMode){
+        selectedConceptIds.clear();selectedConceptIds.add(c.id);multiSelectMode=false;paintConceptSelection();
+      }
+      selectionAnchor=c.id;
+    }
+  });
   li.draggable=true;
   li.addEventListener("dragstart", e=>{
+    const batch=selectedConceptIds.has(c.id)?selectedConcepts():[c];
+    outlineDragRefs=batch.map(x=>({kind:'concept',id:x.id}));
+    e.dataTransfer.setData("application/x-concept-ids",JSON.stringify(batch.map(x=>x.id)));
     e.dataTransfer.setData("text/concept-id", c.id);
-    e.dataTransfer.setData("text/plain", conceptNoteText(c));
+    e.dataTransfer.setData("text/plain", batch.map(conceptNoteText).join("\n\n"));
     e.dataTransfer.effectAllowed=(opts.reorderable||opts.categoryMovable)?"copyMove":"copy";
-    conceptDraggingId=c.id;
+    conceptDraggingId=c.id;conceptDraggingIds=batch.map(x=>x.id);
     if(opts.reorderable||opts.categoryMovable) li.classList.add("dragging");
   });
   li.addEventListener("dragend",()=>{
-    conceptDraggingId=null; li.classList.remove("dragging"); clearConceptDropMarks();
+    conceptDraggingId=null;conceptDraggingIds=[];outlineDragRefs=[];li.classList.remove("dragging");clearConceptDropMarks();
   });
   if(opts.reorderable||opts.categoryMovable){
     li.addEventListener("dragover",e=>{
-      if(!conceptDraggingId || conceptDraggingId===c.id) return;
+      if(!conceptDraggingId || conceptDraggingIds.includes(c.id)) return;
       e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect="move";
       if(opts.reorderable) autoScrollPane(document.getElementById("pane-raw"),e);
       if(opts.categoryMovable) autoScrollPane(document.getElementById("pane-cat"),e);
@@ -1922,19 +2535,22 @@ function conceptRow(c,opts){
       li.classList.add(e.clientY>r.top+r.height/2?"drop-after":"drop-before");
     });
     li.addEventListener("drop",e=>{
-      if(!conceptDraggingId || conceptDraggingId===c.id) return;
+      if(!conceptDraggingId || conceptDraggingIds.includes(c.id)) return;
       e.preventDefault(); e.stopPropagation();
       const r=li.getBoundingClientRect(), after=e.clientY>r.top+r.height/2;
-      const moved=S.concepts.find(x=>x.id===conceptDraggingId);
-      if(opts.categoryMovable && moved){ moved.type=c.type||null; moved.sub=c.sub||null; }
-      if(moved && opts.favZone!==undefined) moved.fav = opts.favZone;   /* dropped above or below the line */
+      const moved=draggingListConcepts();
+      moved.forEach(item=>{
+        if(opts.categoryMovable){item.type=c.type||null;item.sub=c.sub||null;}
+        if(opts.favZone!==undefined)item.fav=opts.favZone;
+      });
       if(moveRawConcept(conceptDraggingId,c.id,after)){
         persist(); opts.categoryMovable?renderRight():renderRaw(); render();
       }
-      conceptDraggingId=null; clearConceptDropMarks();
+      conceptDraggingId=null;conceptDraggingIds=[];clearConceptDropMarks();
     });
   }
   li.addEventListener("dblclick", e=>{
+    if(multiSelectMode || e.ctrlKey || e.metaKey || e.shiftKey)return;
     if(lbl.isContentEditable || e.target.closest("button,input,select,.acts")) return;
     openAnnotation(c);
   });
@@ -1956,7 +2572,7 @@ function conceptRow(c,opts){
 
   const lbl=document.createElement("span");
   lbl.className="lbl"; lbl.textContent=c.label;
-  lbl.title="Double-click to annotate / use + to add to board / ✎ to rename";
+  lbl.title=c.label+"\nDouble-click to annotate / use + to add to board / ✎ to rename";
   function startEdit(){
     lbl.contentEditable="true"; lbl.focus();
     const sel=document.getSelection(); sel.removeAllRanges();
@@ -2014,34 +2630,127 @@ function conceptRow(c,opts){
   return li;
 }
 
+function moveOutlineItems(refs,target,mode){
+  ensureListTrees(S);
+  const roots=S.listTrees[S.activeSession]||[];
+  const source=refs.map(ref=>locateOutline(roots,ref)).filter(Boolean);
+  const hit=target?locateOutline(roots,target):null;
+  if(target&&!hit)return false;
+  if(source.some(s=>s.item===hit?.item || (s.item.kind==='cluster'&&hit&&locateOutline(s.item.children,target)))){
+    toast('A cluster cannot be placed inside itself or its descendants');return false;
+  }
+  const contains=(item,other)=>item.kind==='cluster'&&!!locateOutline(item.children,{kind:other.kind,id:other.id});
+  const moved=source.filter(s=>!source.some(other=>other!==s&&contains(other.item,s.item))).map(s=>s.item);
+  if(!moved.length)return false;
+  const destination=mode==='inside'&&hit?.item.kind==='cluster'?hit.item.children:hit?hit.items:roots;
+  const height=item=>item.kind==='concept'?1:1+Math.max(0,...item.children.map(height));
+  if((hit?.depth||0)+(mode==='inside'?1:0)+Math.max(...moved.map(height))>48){toast('This move would make the outline too deeply nested');return false;}
+  const siblingTarget=hit?.item;
+  for(const item of moved){const p=locateOutline(roots,item);if(p)p.items.splice(p.index,1);}
+  const at=mode==='inside'||!hit?destination.length:destination.indexOf(siblingTarget)+(mode==='after'?1:0);
+  destination.splice(Math.max(0,at),0,...moved);
+  if(mode==='inside'&&hit)clusterOf(hit.item.id).closed=false;
+  persist();renderRight();return true;
+}
+function ungroupCluster(id){
+  const roots=S.listTrees[S.activeSession]||[],hit=locateOutline(roots,{kind:'cluster',id});
+  if(!hit)return;
+  hit.items.splice(hit.index,1,...hit.item.children);
+  clusterOf(id).archived=true;
+  persist();renderRight();toast('Ungrouped — concepts and child clusters were kept');
+}
+function renderOutline(ul){
+  const term=q(),roots=S.listTrees[S.activeSession]||[];
+  function matches(item){
+    if(!term)return true;
+    if(item.kind==='concept')return (S.concepts.find(c=>c.id===item.id)?.label||'').toLowerCase().includes(term);
+    return (clusterOf(item.id)?.name||'').toLowerCase().includes(term)||item.children.some(matches);
+  }
+  function append(items,parent,inherited=false){
+    for(const item of items){
+      if(!inherited&&!matches(item))continue;
+      if(item.kind==='concept'){
+        const c=S.concepts.find(c=>c.id===item.id);if(!c)continue;
+        const li=conceptRow(c,{reorderable:true,showStar:true});li.classList.add('outline-entry');
+        li.dataset.outlineKind='concept';li.dataset.outlineId=item.id;parent.appendChild(li);continue;
+      }
+      const cluster=clusterOf(item.id);if(!cluster)continue;
+      const li=document.createElement('li');li.className='outline-entry cluster-group';
+      li.dataset.outlineKind='cluster';li.dataset.outlineId=item.id;li.style.setProperty('--cluster-color',cluster.color);
+      const head=document.createElement('div');head.className='cluster-head';head.draggable=true;
+      const open=!!term||!cluster.closed;
+      head.appendChild(iconBtn(open?'▾':'▸',open?'Collapse cluster':'Expand cluster',()=>{cluster.closed=open;persist();renderRaw();}));
+      const color=document.createElement('input');color.type='color';color.value=cluster.color||'#2f6df6';color.className='cluster-color';
+      color.setAttribute('aria-label','Border color for '+cluster.name);
+      color.title='Click to choose cluster border color';
+      color.addEventListener('input',()=>{cluster.color=color.value;li.style.setProperty('--cluster-color',cluster.color);persist();render();});head.appendChild(color);
+      const name=document.createElement('span');name.className='cluster-name';name.textContent=cluster.name;name.title='Double-click to rename; drag the heading to move the cluster';
+      name.addEventListener('dblclick',e=>{e.stopPropagation();name.contentEditable='true';name.focus();const range=document.createRange();range.selectNodeContents(name);const sel=getSelection();sel.removeAllRanges();sel.addRange(range);});
+      name.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){e.preventDefault();name.blur();}if(e.key==='Escape'){name.textContent=cluster.name;name.blur();}});
+      name.addEventListener('blur',()=>{const value=name.textContent.trim();name.contentEditable='false';if(value){cluster.name=value;persist();render();}else name.textContent=cluster.name;});head.appendChild(name);
+      const count=document.createElement('span');count.className='cluster-size';count.textContent=outlineConceptIds(item.children).length;head.appendChild(count);
+      head.appendChild(iconBtn('+','Add cluster to board',()=>placeClusterCard(cluster)));
+      head.appendChild(iconBtn('⤴','Ungroup; keep all concepts and child clusters',function(){twoStep(this,'Sure?',()=>ungroupCluster(cluster.id));}));
+      head.addEventListener('dragstart',e=>{
+        if(e.target.closest('button,input,[contenteditable=true]')){e.preventDefault();return;}
+        outlineDragRefs=[{kind:'cluster',id:item.id}];conceptDraggingIds=outlineConceptIds(item.children);conceptDraggingId=conceptDraggingIds[0]||null;
+        e.dataTransfer.setData('text/cluster-id',cluster.id);
+        e.dataTransfer.setData('application/x-concept-ids',JSON.stringify(conceptDraggingIds));
+        e.dataTransfer.setData('text/plain',clusterConcepts(cluster.id).map(conceptNoteText).join('\n\n'));
+        e.dataTransfer.effectAllowed='copyMove';
+      });
+      head.addEventListener('dragend',()=>{outlineDragRefs=[];conceptDraggingId=null;conceptDraggingIds=[];clearOutlineMarks();});
+      li.appendChild(head);
+      if(open){
+        const body=document.createElement('ul');body.className='outline-children';
+        append(item.children,body,inherited||(!!term&&cluster.name.toLowerCase().includes(term)));
+        if(!body.children.length){const empty=document.createElement('li');empty.className='outline-empty';empty.textContent='Drop concepts or clusters here';body.appendChild(empty);}
+        li.appendChild(body);
+      }
+      parent.appendChild(li);
+    }
+  }
+  append(roots,ul);
+  if(!ul.children.length){const empty=document.createElement('li');empty.className='empty';empty.textContent=term?'No matching concepts or clusters':'No concepts yet';ul.appendChild(empty);}
+}
+function clearOutlineMarks(){document.querySelectorAll('.outline-entry.drop-before,.outline-entry.drop-after,.outline-entry.drop-inside,.outline-entry.drop-cluster').forEach(n=>n.classList.remove('drop-before','drop-after','drop-inside','drop-cluster'));}
+function outlineDropAt(e){
+  const entry=e.target.closest('.outline-entry');
+  if(!entry)return {target:null,mode:'after'};
+  const target={kind:entry.dataset.outlineKind,id:entry.dataset.outlineId};
+  const r=(target.kind==='cluster'?entry.querySelector('.cluster-head'):entry).getBoundingClientRect();
+  const fraction=(e.clientY-r.top)/Math.max(1,r.height);
+  const canCluster=target.kind==='concept'&&outlineDragRefs.length&&outlineDragRefs.every(ref=>ref.kind==='concept'&&ref.id!==target.id);
+  const mode=fraction>=.25&&fraction<=.75?(target.kind==='cluster'?'inside':canCluster?'cluster':fraction<.5?'before':'after'):fraction<.5?'before':'after';
+  if(target.kind==='cluster'&&e.clientY>r.bottom)return {target,mode:'inside',entry};
+  return {target,mode,entry};
+}
 function renderRaw(){
+  ensureListTrees(S);
   const ul=document.getElementById("rawList"); ul.innerHTML="";
   const favUl=document.getElementById("favList"); favUl.innerHTML="";
   const block=document.getElementById("favBlock");
-  const term=q();
-  const list=activeConcepts().filter(c=>!term||c.label.toLowerCase().includes(term));
-
-  /* starred concepts stay pinned above the divider while the rest scrolls */
-  const favs=list.filter(c=>c.fav), rest=list.filter(c=>!c.fav);
-  block.classList.toggle("empty", favs.length===0);
-  document.getElementById("favCount").textContent =
-    favs.length ? "Most relevant (" + favs.length + ")" : "";
-  favs.forEach(c=>favUl.appendChild(conceptRow(c,{reorderable:true, showStar:true, favZone:true})));
-
-  if(!list.length){
-    ul.innerHTML='<div class="empty">No concepts yet.<br>Add them above, or paste in the ontology your instructor gives you.</div>';
-    return;
-  }
-  if(!rest.length && favs.length){
-    ul.innerHTML = term
-      ? '<div class="empty">No other matches — the ones above are pinned.</div>'
-      : '<div class="empty">Every concept is pinned above.</div>';
-    return;
-  }
-  rest.forEach(c=>ul.appendChild(conceptRow(c,{reorderable:true, showStar:true, favZone:false})));
+  ul.classList.add('outline-mode');
+  block.classList.add('empty');
+  renderOutline(ul);
 }
 
 const rawPane=document.getElementById("pane-raw"), rawList=document.getElementById("rawList");
+for(const type of ['dragover','drop'])rawPane.addEventListener(type,e=>{
+  if(!outlineDragRefs.length)return;
+  if(e.clientY<rawList.getBoundingClientRect().top)return;
+  e.preventDefault();e.stopPropagation();const spec=outlineDropAt(e);clearOutlineMarks();
+  if(type==='dragover'){
+    e.dataTransfer.dropEffect='move';autoScrollPane(rawPane,e);
+    if(spec.entry)spec.entry.classList.add(spec.mode==='cluster'?'drop-cluster':spec.mode==='inside'?'drop-inside':spec.mode==='before'?'drop-before':'drop-after');
+  }else{
+    if(spec.mode==='cluster')openClusterDialog(false,[spec.target.id,...new Set(outlineDragRefs.map(ref=>ref.id))]);
+    else moveOutlineItems(outlineDragRefs,spec.target,spec.mode);
+    outlineDragRefs=[];conceptDraggingId=null;conceptDraggingIds=[];
+  }
+},true);
+document.getElementById('bExpandClusters').addEventListener('click',()=>{S.clusters.filter(c=>sessionOf(c)===S.activeSession).forEach(c=>c.closed=false);persist();renderRaw();});
+document.getElementById('bCollapseClusters').addEventListener('click',()=>{S.clusters.filter(c=>sessionOf(c)===S.activeSession).forEach(c=>c.closed=true);persist();renderRaw();});
 (function(){
   const block=document.getElementById("favBlock");
   block.addEventListener("dragover",e=>{
@@ -2058,10 +2767,10 @@ const rawPane=document.getElementById("pane-raw"), rawList=document.getElementBy
     if(!conceptDraggingId) return;
     if(e.target.closest("#favList .crow")) return;
     e.preventDefault(); e.stopPropagation();
-    const moved=S.concepts.find(x=>x.id===conceptDraggingId);
-    if(moved && !moved.fav){ moved.fav=true; persist(); }
+    const moved=draggingListConcepts();
+    moved.forEach(c=>{c.fav=true;});if(moved.length)persist();
     block.classList.remove("fav-drop");
-    conceptDraggingId=null; clearConceptDropMarks(); renderRaw();
+    conceptDraggingId=null;conceptDraggingIds=[];clearConceptDropMarks();renderRaw();
   });
 })();
 rawPane.addEventListener("dragover",e=>{
@@ -2077,13 +2786,12 @@ rawPane.addEventListener("drop",e=>{
   const r=rawList.getBoundingClientRect();
   if(e.clientY<r.top) return;
   e.preventDefault();
-  const from=S.concepts.findIndex(c=>c.id===conceptDraggingId);
-  if(from>=0){
-    const moved=S.concepts.splice(from,1)[0];
-    moved.fav=false;                       /* dropped below the line */
-    S.concepts.push(moved); persist(); renderRaw(); render();
+  const moved=draggingListConcepts(),ids=new Set(moved.map(c=>c.id));
+  if(moved.length){
+    moved.forEach(c=>{c.fav=false;});
+    S.concepts=S.concepts.filter(c=>!ids.has(c.id)).concat(moved);persist();renderRaw();render();
   }
-  conceptDraggingId=null; clearConceptDropMarks();
+  conceptDraggingId=null;conceptDraggingIds=[];clearConceptDropMarks();
 });
 
 let pendingAdd=null, pendingSubType=null, pendingColor=null;
@@ -2120,6 +2828,7 @@ function renderCats(){
     const mine=activeConcepts().filter(c=>c.type===t.id && match(c));
     const blk=document.createElement("div");
     blk.className="typeBlock"+(S.closedTypes[t.id]?" closed":"");
+    blk.style.borderColor=t.color;
 
     const head=document.createElement("div"); head.className="typeHead";
     head.draggable=true;
@@ -2414,10 +3123,12 @@ function renderDatasetSelect(){
   sel.value=S.activeSession||"session1";
 }
 function renderRight(){
+  hideConceptMenu();
   renderDatasetSelect();
   document.getElementById("search").placeholder=
     "Search "+datasetName(S.activeSession)+" concepts…";
   renderRaw(); renderCats(); renderCausal(); renderOnt();
+  paintConceptSelection();
 
   const sel=document.getElementById("newRawCat");
   const keep=sel.value; fillCatSelect(sel, null, {blank:true});
@@ -2451,6 +3162,7 @@ document.querySelectorAll(".tab").forEach(t=>{
   });
 });
 document.getElementById("sessionSelect").addEventListener("change",e=>{
+  selectedConceptIds.clear();selectionAnchor=null;paintConceptSelection();
   S.activeSession=e.target.value;
   pendingAdd=null; pendingSubType=null; pendingColor=null;
   document.getElementById("search").value="";
@@ -2570,6 +3282,11 @@ noteEl.addEventListener("dragover",e=>{
 noteEl.addEventListener("dragleave",()=>noteEl.classList.remove("concept-drop"));
 noteEl.addEventListener("drop",e=>{
   noteEl.classList.remove("concept-drop");
+  const batch=draggedConcepts(e);
+  if(batch.length>1){
+    e.preventDefault();e.stopPropagation();
+    insertConceptIntoNotes({label:batch.map(conceptNoteText).join("\n\n")});return;
+  }
   const id=e.dataTransfer.getData("text/concept-id") || conceptDraggingId;
   const concept=S.concepts.find(c=>c.id===id);
   if(!concept) return;
@@ -2600,20 +3317,27 @@ document.getElementById("bNoteToggle").addEventListener("click",()=>{
 /* =========================================================
    4. Versions — one snapshot per ontologizing session
    ========================================================= */
-const SNAP_KEYS=["activeSession","customDatasets","meta","types","subs","concepts","causal","ont","scene","notes"];
+const SNAP_KEYS=["activeSession","customDatasets","meta","types","subs","concepts","causal","ont","scene","notes","clusters","listTrees","listView"];
 const grabSnap = () => { const o={}; SNAP_KEYS.forEach(k=>o[k]=JSON.parse(JSON.stringify(S[k]))); return o; };
-const putSnap  = sn => SNAP_KEYS.forEach(k=>{ if(sn[k]!==undefined) S[k]=JSON.parse(JSON.stringify(sn[k])); });
+const putSnap  = sn => {
+  SNAP_KEYS.forEach(k=>{if(sn[k]!==undefined)S[k]=JSON.parse(JSON.stringify(sn[k]));});
+  if(sn.clusters===undefined)S.clusters=[];
+  if(sn.listTrees===undefined)S.listTrees={};
+  ensureListTrees(S);
+};
 
 function nextLabel(){ return "Version "+(S.versions.filter(v=>!v.auto).length+1); }
-function saveVersion(label, auto){
+async function saveVersion(label, auto){
+  if(storageBlocked){toast("Saving is paused. Download current work first.");return null;}
+  const previousVersions=S.versions.slice();
   const v={id:nid("v"), label:label||nextLabel(), ts:Date.now(), auto:!!auto, snap:grabSnap()};
   S.versions.unshift(v);
   if(auto){ let seen=0; S.versions=S.versions.filter(x=>!x.auto || ++seen<=3); }
-  dirty=true; writeNow();
-  if(!storageOK){                       /* over the quota: roll back and say so */
-    S.versions=S.versions.filter(x=>x.id!==v.id);
-    dirty=true; storageOK=true; writeNow();
-    toast("Not enough room in this browser. Delete an old version, or use Backup.");
+  dirty=true;
+  if(!await writeNow()){
+    S.versions=previousVersions;
+    dirty=true;
+    toast(storageBlocked?"Version not saved: saving is paused. Download current work.":"Version could not be saved. Previous versions were kept. Use Backup.");
     renderVersions(); paintVersionCount(); return null;
   }
   renderVersions(); paintVersionCount();
@@ -2632,12 +3356,14 @@ function snapStats(sn){
          sn.causal.filter(r=>r.text.trim()).length+" causal lines · "+
          (w?w.split(/\s+/).length:0)+" words of notes";
 }
-function storeBytes(){ try{ return (localStorage.getItem(STORE_KEY)||"").length; }catch(e){ return 0; } }
+function storeBytes(){
+  try{return Object.keys(localStorage).reduce((n,k)=>n+2*(k.length+(localStorage.getItem(k)||"").length),0);}catch(e){return 0;}
+}
 function renderVersions(){
   const list=document.getElementById("verList"); list.innerHTML="";
   const bytes=storeBytes(), pct=Math.min(100, Math.round(bytes/5000000*100));
   document.getElementById("verHint").textContent=
-    "Stored in this browser on this computer. About "+Math.round(bytes/1024)+" KB used of roughly 5 MB.";
+    "Stored in this browser, not in the cloud. Estimated "+Math.round(bytes/1024)+" KB used by this site's storage, including recovery copies. The browser limit varies (often about 5 MB).";
   const fill=document.getElementById("storeFill");
   fill.style.width=pct+"%"; fill.className = pct>80 ? "warn" : "";
 
@@ -2678,8 +3404,9 @@ function renderVersions(){
     row.appendChild(acts); list.appendChild(row);
   });
 }
-function restoreVersion(v){
-  saveVersion("Before restoring "+v.label, true);
+async function restoreVersion(v){
+  if(!await preserveBeforeReplace("before-version-restore"))return;
+  if(!await saveVersion("Before restoring "+v.label, true))return;
   putSnap(v.snap);
   markLegacyAsSession1(S);
   addDatasetSeeds(S);  /* Old saved versions may predate later raw datasets. */
@@ -2687,12 +3414,12 @@ function restoreVersion(v){
   document.getElementById("mName").value=S.meta.name||"";
   document.getElementById("mTitle").value=S.meta.title||"";
   applyNotes(); render(); renderRight();
-  dirty=true; writeNow(); renderVersions(); paintVersionCount();
-  toast("Restored “"+v.label+"”");
+  dirty=true;const ok=await writeNow();renderVersions();paintVersionCount();
+  if(ok)toast("Restored “"+v.label+"”");
 }
-document.getElementById("bSaveVer").addEventListener("click",e=>{
+document.getElementById("bSaveVer").addEventListener("click",async e=>{
   e.stopPropagation();
-  const v=saveVersion(null,false);
+  const v=await saveVersion(null,false);
   if(v){ document.getElementById("verPanel").classList.add("on"); toast("Saved “"+v.label+"”"); }
 });
 document.getElementById("bVerClose").addEventListener("click",e=>{
@@ -2755,12 +3482,18 @@ function ontTableHTML(){
 }
 function conceptTableHTML(){
   let h='<table '+TBL+'><tr><th '+TH+'>Type</th><th '+TH+'>Subtype</th><th '+TH+'>Concept</th>'+
-        '<th '+TH+'>Annotation</th><th '+TH+'>Source</th><th '+TH+'>On board</th></tr>';
+        '<th '+TH+'>Annotation</th><th '+TH+'>Source</th><th '+TH+'>On board</th><th '+TH+'>Cluster path</th></tr>';
+  const paths=new Map();
+  function walk(items,path){items.forEach(item=>{
+    if(item.kind==='concept')paths.set(item.id,path.join(' / '));
+    else walk(item.children,path.concat(clusterOf(item.id)?.name||''));
+  });}
+  walk((S.listTrees||{})[S.activeSession]||[],[]);
   activeConcepts().forEach(c=>{
     const t=typeOf(c.type), sb=c.sub?subOf(c.sub):null;
     h+='<tr><td>'+esc(t?t.name:"(uncategorized)")+'</td><td>'+esc(sb?sb.name:"")+'</td><td>'+
        esc(c.label)+'</td><td>'+nl2br(c.annotation||"")+'</td><td>'+
-       (c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td></tr>';
+       (c.mine?"student":"given")+'</td><td>'+(onBoard(c)?"Y":"")+'</td><td>'+esc(paths.get(c.id)||'')+'</td></tr>';
   });
   return h+'</table>';
 }
@@ -2795,10 +3528,11 @@ function objectCounts(){
   const types=visibleTypes(), typeIds=new Set(types.map(t=>t.id));
   const concepts=activeConcepts().length;
   const categories=types.length;
+  const clusters=(S.clusters||[]).filter(c=>sessionOf(c)===S.activeSession&&!c.archived).length;
   const subcategories=S.subs.filter(s=>typeIds.has(s.type)).length;
   const scene=S.scene;
   return {
-    ontology:{concepts,categories,subcategories,total:concepts+categories+subcategories},
+    ontology:{concepts,categories,subcategories,clusters,total:concepts+categories+subcategories+clusters},
     board:{conceptNodes:scene.nodes.length,categoryCards:categoryCards().length,
            connections:scene.links.length,textNotes:scene.texts.length,drawnStrokes:scene.strokes.length}
   };
@@ -2810,6 +3544,7 @@ function objectCountTableHTML(){
   h+=row('Concepts',counts.ontology.concepts);
   h+=row('Categories shown in the Categories tab',counts.ontology.categories);
   h+=row('Subcategories',counts.ontology.subcategories);
+  h+=row('Clusters (including nested clusters)',counts.ontology.clusters);
   h+='<tr><th '+TH+'>Total ontology objects</th><th '+TH+' align="right">'+counts.ontology.total+'</th></tr></table>';
   h+='<p style="font-family:Calibri,sans-serif;font-size:10pt">Each concept entry counts once, including repeated names. Board placements do not increase this total.</p>';
   h+='<table '+TBL+'><tr><th '+TH+'>Shared board elements (all datasets)</th><th '+TH+'>Count</th></tr>';
@@ -2897,36 +3632,86 @@ function exportVersion(v, kind){
   else { dl(wordBlob(v.label), baseName(v.label)+".doc"); done(); }
 }
 
+function downloadRawCopy(raw,name){
+  if(raw===null){toast("No stored original is available");return;}
+  dl(new Blob([raw],{type:"application/json"}),name+".json");
+}
 document.getElementById("bSave").addEventListener("click",()=>{
-  dirty=true; writeNow();
   dl(new Blob([JSON.stringify(S,null,2)],{type:"application/json"}), baseName()+".json");
   toast("Backup file saved — keep it somewhere safe");
 });
+document.getElementById("bDownloadDraft").addEventListener("click",()=>{
+  downloadRawCopy(JSON.stringify(S,null,2),"concept-explorer-current-work");
+});
+document.getElementById("bDownloadOriginal").addEventListener("click",()=>{
+  downloadRawCopy(originalRaw,"concept-explorer-stored-original");
+});
+document.getElementById("bRecovery").addEventListener("click",()=>{
+  const list=document.getElementById("recoveryList");list.replaceChildren();
+  try{
+    const keys=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i))
+      .filter(k=>k&&(k.startsWith(RECOVERY_PREFIX)||k===PRE_DATASET_BACKUP_KEY||k===LEGACY_STORE_KEY||k===STORE_KEY)).sort().reverse();
+    keys.forEach(key=>{
+      const row=document.createElement("div");row.className="recoveryRow";
+      const label=document.createElement("span");
+      if(key===STORE_KEY)label.textContent="Latest protected workspace stored in this browser";
+      else if(key===LEGACY_STORE_KEY)label.textContent="Original legacy workspace (kept separate)";
+      else if(key===PRE_DATASET_BACKUP_KEY)label.textContent="Earlier dataset-upgrade backup";
+      else if(key.endsWith("-closing-draft"))label.textContent="Closing-tab draft · "+key.slice(RECOVERY_PREFIX.length,RECOVERY_PREFIX.length+12);
+      else{
+        const stamp=Number(key.slice(RECOVERY_PREFIX.length).split("-")[0]);
+        label.textContent=(Number.isFinite(stamp)?fmtTs(stamp):"Recovery copy")+
+          (key.includes("before-update")?" · Before update":key.includes("before-reset")?" · Before reset":" · Before replacing work");
+      }
+      const button=document.createElement("button");button.className="btn";button.textContent="Download JSON";
+      button.addEventListener("click",()=>{try{downloadRawCopy(localStorage.getItem(key),key);}catch(e){toast("This copy is not accessible");}});
+      row.append(label,button);list.appendChild(row);
+    });
+    if(!keys.length)list.textContent="No recovery copies yet. Existing work is preserved before updates and replacements.";
+  }catch(e){list.textContent="Browser storage is unavailable. Download current work using Backup.";}
+  document.getElementById("recoveryDialog").showModal();
+});
+document.getElementById("bRecoveryClose").addEventListener("click",()=>document.getElementById("recoveryDialog").close());
+async function preserveBeforeReplace(reason){
+  if(storageBlocked||suspend){toast("Saving is paused. Download current work before replacing anything.");return false;}
+  dirty=true;
+  if(!await writeNow())return false;
+  try{
+    return await navigator.locks.request(STORE_KEY+"-write",()=>{
+      if(storageBlocked||localStorage.getItem(STORE_KEY)!==baselineRaw){
+        blockStorage("Another tab changed the workspace before replacement.");return false;
+      }
+      preserveRecovery(baselineRaw,reason);return true;
+    });
+  }catch(e){blockStorage("A recovery copy could not be saved. Replacement was cancelled.");return false;}
+}
 document.getElementById("bLoad").addEventListener("click",()=>document.getElementById("fileIn").click());
 document.getElementById("fileIn").addEventListener("change",e=>{
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=()=>{
+  r.onload=async()=>{
     try{
-      const d=JSON.parse(r.result);
-      if(!d.concepts) throw 0;
-      S=hydrate(d);
+      const d=validateStoredState(JSON.parse(r.result));
+      const next=hydrate(d);validateStoredState(next);
+      if(!await preserveBeforeReplace("before-file-restore"))return;
+      S=next;
       document.getElementById("mName").value=S.meta.name||"";
       document.getElementById("mTitle").value=S.meta.title||"";
       history.length=0; future.length=0; updUndo();
       applyNotes(); render(); renderRight(); paintVersionCount(); renderVersions();
-      dirty=true; writeNow(); toast("Loaded");
+      dirty=true;if(await writeNow())toast("Loaded");
     }catch(err){ toast("Cannot read this file — only a Backup file from this app"); }
   };
   r.readAsText(f); e.target.value="";
 });
 document.getElementById("bReset").addEventListener("click",function(){
-  twoStep(this,"Erase everything?",()=>{
+  twoStep(this,"Erase everything?",async()=>{
+    if(!await preserveBeforeReplace("before-reset"))return;
     S=blankState();
     document.getElementById("mName").value=""; document.getElementById("mTitle").value="";
     history.length=0; future.length=0; updUndo();
     applyNotes(); render(); renderRight(); paintVersionCount(); renderVersions();
-    dirty=true; writeNow(); toast("Reset");
+    dirty=true;if(await writeNow())toast("Reset — previous work is in Recovery copies");
   });
 });
 
@@ -2939,7 +3724,8 @@ document.getElementById("bReset").addEventListener("click",function(){
   grip.addEventListener("pointerdown",e=>{ on=true; grip.setPointerCapture(e.pointerId); });
   grip.addEventListener("pointermove",e=>{
     if(!on) return;
-    right.style.width=Math.min(760,Math.max(300, window.innerWidth-e.clientX))+"px";
+    const available=Math.max(300,window.innerWidth-326);
+    right.style.width=Math.min(available,Math.max(300, window.innerWidth-e.clientX))+"px";
     resizeCanvas();
   });
   grip.addEventListener("pointerup",()=>{ on=false; });
@@ -2949,7 +3735,10 @@ window.addEventListener("resize", resizeCanvas);
 if(!restore()) S=blankState();
 document.getElementById("mName").value=S.meta.name||"";
 document.getElementById("mTitle").value=S.meta.title||"";
+suspend=true;
 setTool(S.tool||"select");
+suspend=false;
+if(pendingStorageUpgrade&&!storageBlocked)persist();
 if(IN_FRAME){
   const chip=document.getElementById("saveChip");
   chip.className="bad";
@@ -2966,6 +3755,7 @@ resizeCanvas();
 updUndo();
 paintVersionCount();
 paintSaveChip();
+showClosingDraftNotice();
 </script>
 </body>
 </html>
