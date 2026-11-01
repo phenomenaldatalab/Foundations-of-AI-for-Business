@@ -407,6 +407,7 @@
         <option value="session4">Interaction Strategies</option>
         <option value="session5">Evolutionary strategies</option>
         <option value="session6">Search Strategy</option>
+        <option value="session7">Representation</option>
       </select>
       <button class="btn" id="bAddDataset" title="Create an empty dataset">+ Dataset</button>
     </div>
@@ -559,7 +560,8 @@ const SESSION_INFO = [
   {id:"session3", name:"Aggregation Strategies"},
   {id:"session4", name:"Interaction Strategies"},
   {id:"session5", name:"Evolutionary strategies"},
-  {id:"session6", name:"Search Strategy"}
+  {id:"session6", name:"Search Strategy"},
+  {id:"session7", name:"Representation"}
 ];
 const datasetsFor = state => SESSION_INFO.concat(Array.isArray(state.customDatasets)?state.customDatasets:[]);
 const datasetName = (id,state=S) =>
@@ -931,12 +933,40 @@ function session6Concepts(){
   });
 }
 
+const SESSION7_GROUPS = [
+  ['task environment/assumptions',[
+    'spatial interdependencies','constraints','constraint network','regularities','curse of dimensionality','relations','state','spatial relations','hard constraints','soft constraints','uncertain actions','discrete or continuous domains','few laws and homogeneous parts'
+  ]],
+  ['data',[
+    'schemas','representation','constraint network','neural networks','causal networks','internal representations','external representations','relational databases','variables','domains','constraints','scope','n-ary constraint','partial assignment','network','graph structure','nodes','links/connections/relations','overlapping constraints','heuristics','cause-effect relations','events/random variables','causal nets/Bayesian networks','conditional probabilities','beliefs about cause-effect relations','directed acyclic graph','parent','child','explicit knowledge','tacit knowledge','productions','if-then rules','production rules','neurons','binary domains','input variables','output variables','correlations','weights','densely interdependent constraint network','directionless constraint network'
+  ]],
+  ['problem-solving processes',[
+    'search tree','constraint satisfaction problems','satisfying a constraint','propagation','distant propagation','interleaving search and representation','backtracking','forward-checking','constraint propagation','updating beliefs about experiments','codifying rules','learning constraints','learning a probability distribution','make specific predictions','generate new data','modifying the weights','reasoning'
+  ]],
+  ['cognitive assumptions',['commonsense knowledge','autoencoders','mental models','decision models']],
+  ['outcomes',[
+    'database integrity','consistent','power of representations','magic of propagation','satisfice','optimizing','find any solution','find all solutions','find the best solution','knowledge acquisition bottleneck','brittleness','infinite regress','minimizing cost/entropy','representation learning','learning as compression','satisficing in causal nets'
+  ]],
+  ['settings',[
+    'algebraic notation','double-entry bookkeeping','engineering drawings','digital spreadsheets','financial projections','Sudoku','scheduling tasks in a pin factory','diagnosing a toothache'
+  ]],
+  ['theories/people/places',[
+    'physics hypothesis','society-of-mind hypothesis','principle of locality','CSPs','expert systems','Judea Pearl','Wittgenstein','Hubert Dreyfus','Boltzmann machines','knowledge representation and reasoning perspective'
+  ]]
+];
+function session7Concepts(){
+  let i=0,h=0;
+  return SESSION7_GROUPS.flatMap(([heading,labels])=>[
+    {id:'s7h_'+String(++h).padStart(3,'0'),label:heading,type:null,sub:null,mine:false,session:'session7'},
+    ...labels.map(label=>({id:'s7c_'+String(++i).padStart(3,'0'),label,type:null,sub:null,mine:false,session:'session7'}))
+  ]);
+}
 const PALETTE = ["#1c1f24","#2f6df6","#12b886","#f59f00","#e64980","#7950f2"];
 const LEGACY_STORE_KEY = "concept-explorer-v2";
 /* Old deployed pages cannot write this key. Keep their original key untouched. */
 const STORE_KEY = "concept-explorer-protected-v1";
-const STORAGE_BUILD = "2026-10-27-protected-2";
-const SUPPORTED_SCHEMA = 13;
+const STORAGE_BUILD = "2026-11-01-representation";
+const SUPPORTED_SCHEMA = 14;
 const RECOVERY_PREFIX = STORE_KEY+"-recovery-";
 /* Keep one untouched copy of pre-dataset browser data. This uses a different
    key, so the schema upgrade can never be the only remaining copy. */
@@ -1005,7 +1035,7 @@ function clusterConcepts(id,state=S){
 function blankOntRow(){ const r={id:nid("o")}; (S&&S.types?S.types:DEFAULT_TYPES).forEach(t=>r[t.id]=""); return r; }
 function blankState(){
   return {
-    schema:13,
+    schema:14,
     clusters:[],listTrees:{},listView:"grouped",
     activeSession:"session1",
     customDatasets:[],
@@ -1014,7 +1044,7 @@ function blankState(){
     subs: baseSubs(),
     concepts: SAMPLE.map(([type,sub,label])=>({
       id:nid("c"), label, type, sub: sub ? type+"::"+slug(sub) : null,
-      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts(),session5Concepts(),session6Concepts()),
+      mine:false, session:"session1" })).concat(session2Concepts(),session3Concepts(),session4Concepts(),session5Concepts(),session6Concepts(),session7Concepts()),
     causal:[{id:nid("r"), depth:0, text:""}],
     ont:[blankOntRow(), blankOntRow(), blankOntRow()],
     scene:{strokes:[], nodes:[], texts:[], links:[], categoryCards:[]},
@@ -1293,7 +1323,7 @@ function addSession4Seed(d){ return seedSession(d, session4Concepts()); }
 function addSession5Seed(d){ return seedSession(d, session5Concepts()); }
 function addSession6Seed(d){ return seedSession(d, session6Concepts()); }
 function addDatasetSeeds(d){
-  return addSession6Seed(addSession5Seed(addSession4Seed(addSession3Seed(addSession2Seed(d)))));
+  return seedSession(addSession6Seed(addSession5Seed(addSession4Seed(addSession3Seed(addSession2Seed(d))))),session7Concepts());
 }
 function removeDefaultSession2Categories(d){
   d.types=d.types||[]; d.concepts=d.concepts||[];
@@ -1318,7 +1348,7 @@ function markLegacyAsSession1(d){
 function migrate(d){
   if(d.schema!==undefined && (!Number.isInteger(d.schema)||d.schema>SUPPORTED_SCHEMA))
     throw new Error("Unsupported workspace version");
-  if(d.schema===13||d.schema===12) return markLegacyAsSession1(d);
+  if(d.schema===14||d.schema===13||d.schema===12) return markLegacyAsSession1(d);
   if(d.schema===11){                /* add Search Strategy without touching existing work */
     markLegacyAsSession1(d);
     d.schema=12;
@@ -1414,7 +1444,9 @@ function bindNodes(d){
   return d;
 }
 function hydrate(d){
+  const needsRepresentation=d.schema!==14;
   d=migrate(d);
+  if(needsRepresentation)seedSession(d,session7Concepts());
   d.schema=SUPPORTED_SCHEMA;
   delete d.recoveryBaseRaw;delete d.recoveryLegacyRaw;delete d.recoveryDraftAt;
   d.customDatasets = Array.isArray(d.customDatasets) ? d.customDatasets : [];
